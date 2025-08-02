@@ -1,0 +1,59 @@
+👤 Pessoa A – Servidor
+
+    Responsabilidades:
+
+        Criar servidor WebSocket em TypeScript.
+
+        Configurar Redis + BullMQ para fila de mensagens.
+
+        Configurar SQLite + Prisma para salvar histórico e usuários.
+
+        Implementar:
+
+            Login/autenticação.
+
+            Receber mensagens, enfileirar e salvar.
+
+            Broadcast para todos os clientes conectados.
+
+            Endpoint para recuperar histórico ao conectar.
+
+    Entregáveis principais:
+
+        server.ts com WebSocket funcionando.
+
+        queue.ts com BullMQ processando mensagens.
+
+        db.ts com Prisma + SQLite configurado.
+
+        Modelo de mensagem e usuário.
+
+
+
+
+
+👤 Pessoa B – Cliente
+
+    Responsabilidades:
+
+        Criar CLI em Node/TS para o usuário.
+
+        Implementar:
+
+            Tela inicial de login/registro.
+
+            Conexão com o servidor via WebSocket.
+
+            Envio/recebimento de mensagens.
+
+            Exibir histórico no terminal ao logar.
+
+            Interface de texto com cores (chalk).
+
+    Entregáveis principais:
+
+        client.ts que conecta no servidor.
+
+        Sistema de input no terminal (readline).
+
+        Sistema básico de comandos (ex: /join #canal, /exit).
