@@ -11,7 +11,9 @@ func Home(app *tview.Application, switchScreen func(name string)) tview.Primitiv
 		AddItem("Auth", "Login/Register", 'a', func() {
 			switchScreen("auth")
 		}).
-		AddItem("Chat", "Chat with friends", 'c', nil).
+		AddItem("Chat", "Chat with friends", 'c', func() {
+			switchScreen("chatmenu")
+		}).
 		AddItem("Quit", "Press to exit", 'q', func() {
 			app.Stop()
 		})
