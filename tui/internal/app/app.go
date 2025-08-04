@@ -13,6 +13,7 @@ func NewApp() *App {
 	pages := NewPages(app)
 
 	app.SetRoot(pages, true)
+	app.SetFocus(pages)
 
 	return &App{tviewApp: app}
 }

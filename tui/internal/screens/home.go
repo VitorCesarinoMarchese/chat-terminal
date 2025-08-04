@@ -7,6 +7,7 @@ import (
 
 func Home(app *tview.Application, switchScreen func(name string)) tview.Primitive {
 	list := tview.NewList().
+		SetShortcutColor(tcell.ColorOrchid).
 		AddItem("Auth", "Login/Register", 'a', func() {
 			switchScreen("auth")
 		}).
