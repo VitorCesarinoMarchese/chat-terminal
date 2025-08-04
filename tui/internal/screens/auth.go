@@ -11,7 +11,9 @@ func Auth(switchScreen func(name string)) tview.Primitive {
 		AddItem("Login", "If you already have a account", 'l', func() {
 			switchScreen("login")
 		}).
-		AddItem("Register", "If you are new to TUI-Chat", 'r', nil).
+		AddItem("Register", "If you are new to TUI-Chat", 'r', func() {
+			switchScreen("register")
+		}).
 		AddItem("Quit", "Press to go back", 'q', func() {
 			switchScreen("home")
 		})
