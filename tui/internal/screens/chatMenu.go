@@ -12,7 +12,7 @@ func ChatMenu(switchScreen func(name string)) tview.Primitive {
 			switchScreen("contacts")
 		}).
 		AddItem("Groups", "A list of all your groups", 'g', func() {
-			switchScreen("register")
+			switchScreen("groups")
 		}).
 		AddItem("Quit", "Press to go back", 'q', func() {
 			switchScreen("home")
