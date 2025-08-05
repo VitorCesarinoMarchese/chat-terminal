@@ -6,7 +6,7 @@ import (
 
 type User struct {
 	gorm.Model
-	username   string
-	jwt        string
-	jwtRefresh string
+	Username   string
+	Jwt        string
+	JwtRefresh string
 }

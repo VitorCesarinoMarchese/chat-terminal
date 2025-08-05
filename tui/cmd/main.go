@@ -1,10 +1,20 @@
 package main
 
-import "github.com/VitorCesarinoMarchese/chat-terminal/internal/app"
+import (
+	"log"
+
+	"github.com/VitorCesarinoMarchese/chat-terminal/internal/app"
+	"github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
+)
 
 func main() {
 	application := app.NewApp()
-	app.Db()
+	_, err := app.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	models.InitMigrations()
+
 	if err := application.Run(); err != nil {
 		panic(err)
 	}

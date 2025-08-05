@@ -2,28 +2,42 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type dbUtils struct {
-	db  *gorm.DB
-	ctx context.Context
+	DB  *gorm.DB
+	Ctx context.Context
 }
 
-func Db() dbUtils {
-	db, err := gorm.Open(sqlite.Open("../state/test.db"), &gorm.Config{})
+var instance *dbUtils
+
+func InitDB() (*dbUtils, error) {
+	if instance != nil {
+		return instance, nil
+	}
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "../state/test.db"
+	}
+
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	ctx := context.Background()
-
-	res := dbUtils{
-		db,
-		ctx,
+	instance = &dbUtils{
+		DB:  db,
+		Ctx: context.Background(),
 	}
+	return instance, nil
+}
 
-	return res
+func GetDB() *dbUtils {
+	return instance
 }
