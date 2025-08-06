@@ -1,11 +1,10 @@
 package models
 
-import (
-	"github.com/VitorCesarinoMarchese/chat-terminal/internal/app"
-)
+import "github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
 
-func migration(model ...interface{}) {
-	dbu := app.GetDB()
+// the lsp tould me to put any insted of ...interface{}
+func migration(model any) {
+	dbu, _ := db.GetDB()
 	dbu.DB.AutoMigrate(&model)
 }
 

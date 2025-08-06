@@ -9,13 +9,13 @@ import (
 
 func Home(app *tview.Application, switchScreen func(name string)) tview.Primitive {
 	items := []types.MenuItem{
-		{"Auth", "Login/Register", 'a', func() {
+		{Title: "Auth", Desc: "Login/Register", Shortcut: 'a', F: func() {
 			switchScreen("auth")
 		}},
-		{"Chat", "Chat with friends", 'c', func() {
+		{Title: "Chat", Desc: "Chat with friends", Shortcut: 'c', F: func() {
 			switchScreen("chatmenu")
 		}},
-		{"Quit", "Press to exit", 'q', func() {
+		{Title: "Quit", Desc: "Press to exit", Shortcut: 'q', F: func() {
 			app.Stop()
 		}},
 	}

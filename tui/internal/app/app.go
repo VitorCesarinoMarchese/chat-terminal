@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/VitorCesarinoMarchese/chat-terminal/internal/screens"
 	"github.com/rivo/tview"
 )
 
@@ -10,7 +11,7 @@ type App struct {
 
 func NewApp() *App {
 	app := tview.NewApplication()
-	pages := NewPages(app)
+	pages := screens.NewPages(app)
 
 	app.SetRoot(pages, true)
 	app.SetFocus(pages)

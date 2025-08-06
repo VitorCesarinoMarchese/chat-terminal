@@ -9,13 +9,13 @@ import (
 
 func AccountMenu(switchScreen func(name string)) tview.Primitive {
 	items := []types.MenuItem{
-		{"Username", "Change your username", 'u', func() {
+		{Title: "Username", Desc: "Change your username", Shortcut: 'u', F: func() {
 			switchScreen("login")
 		}},
-		{"Password", "Change your password", 'p', func() {
+		{Title: "Password", Desc: "Change your password", Shortcut: 'p', F: func() {
 			switchScreen("password")
 		}},
-		{"Quit", "Press to go back", 'q', func() {
+		{Title: "Quit", Desc: "Press to go back", Shortcut: 'q', F: func() {
 			switchScreen("home")
 		}},
 	}
