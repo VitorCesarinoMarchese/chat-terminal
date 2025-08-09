@@ -18,6 +18,7 @@ func NewPages(app *tview.Application) *tview.Pages {
 	pages.AddPage("chatmenu", ChatMenu(switchScreens), true, false)
 	pages.AddPage("account", AccountMenu(switchScreens), true, false)
 	pages.AddPage("password", PaswordChange(switchScreens), true, false)
+	pages.AddPage("test", Test(app), true, false)
 
 	return pages
 }

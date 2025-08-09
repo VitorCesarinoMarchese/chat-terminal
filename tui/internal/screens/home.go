@@ -18,6 +18,9 @@ func Home(app *tview.Application, switchScreen func(name string)) tview.Primitiv
 		{Title: "Quit", Desc: "Press to exit", Shortcut: 'q', F: func() {
 			app.Stop()
 		}},
+		{Title: "Test", Desc: "Press to test", Shortcut: 't', F: func() {
+			switchScreen("test")
+		}},
 	}
 	list := widgets.Menu(items)
 	frame := tview.NewFrame(list).
