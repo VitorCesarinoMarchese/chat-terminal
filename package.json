@@ -10,12 +10,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.13.0",
     "@types/node": "^24.1.0",
+    "bcrypt": "^6.0.0",
     "bullmq": "^5.56.9",
     "ioredis": "^5.7.0",
     "prisma": "^6.13.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/ws": "^8.18.1"
   }
 }
