@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { db } from './db';
+import { db } from './old_db';
 
 const connection = new IORedis({
   maxRetriesPerRequest: null,

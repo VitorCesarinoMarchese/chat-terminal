@@ -5,3 +5,4 @@ const db = new PrismaClient({
 });
 
 export { db };
+

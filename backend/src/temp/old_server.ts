@@ -1,9 +1,10 @@
+import type { WebSocket as WebSocketType } from 'ws';
 import WebSocket from 'ws';
-import { db } from './db'; 
-import { messageQueue } from './queue';
-import bcrypt from 'bcrypt';
+import { db } from './old_db';
+import { messageQueue } from './old_queue';
+import * as bcrypt from 'bcrypt';
 
-interface AuthenticatedSocket extends WebSocket {
+interface AuthenticatedSocket extends WebSocketType {
   user?: string;
 }
 
@@ -13,10 +14,10 @@ const SALT_ROUNDS = 10;
 export { wss };
 
 wss.on('connection', (socket) => {
-  const ws = socket as AuthenticatedSocket; 
+  const ws = socket as AuthenticatedSocket;
   console.log('Novo cliente conectado');
 
-  ws.user = undefined; 
+  ws.user = undefined;
 
   ws.on('message', async (raw) => {
     try {
@@ -30,8 +31,8 @@ wss.on('connection', (socket) => {
         if (!user) {
           const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
           user = await db.user.create({
-            data: { 
-              username, 
+            data: {
+              username,
               password: hashedPassword,
             }
           });
