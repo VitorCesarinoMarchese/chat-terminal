@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import db from "../config/db";
+import { generateTokens } from "../utils/jwtUtils";
 
 export const registerController = async (req: Request, res: Response) => {
   try {
@@ -24,11 +25,22 @@ export const registerController = async (req: Request, res: Response) => {
     const user = await db.user.create({
       data: {
         username: username,
-        password: hashPassword
+        password: hashPassword,
+        refreshToken: ""
+      }
+    })
+    const { accessToken, refreshToken } = await generateTokens(user.id)
+
+    db.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        refreshToken: refreshToken
       }
     })
 
-    res.status(201).json({ message: `User ${user.username} created suscessufuly` })
+    res.status(201).json({ message: `User ${user.username} created suscessufuly`, refreshToken, accessToken })
   } catch (e) {
     res.status(500).json({ error: `Server erros` })
     console.error(e)

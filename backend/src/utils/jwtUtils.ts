@@ -3,7 +3,12 @@ import dotenv from "dotenv"
 import db from "../config/db"
 dotenv.config()
 
-export const generateTokens = async (userId: number) => {
+type generatedTokens = {
+  accessToken: string,
+  refreshToken: string
+}
+
+export const generateTokens = async (userId: number): Promise<generatedTokens> => {
   const jwtSecret = process.env.JWT_SECRET!
   const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET!
   if (!jwtSecret || !jwtRefreshSecret) {
@@ -16,7 +21,7 @@ export const generateTokens = async (userId: number) => {
     }
   })
   if (!user) {
-    return { error: "User not found" }
+    throw new Error("Error user not found")
   }
 
   const accessToken = jwt.sign(
