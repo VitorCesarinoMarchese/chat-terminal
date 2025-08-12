@@ -1,5 +1,7 @@
 import { createServer } from "./config/server"
+import dotenv from "dotenv"
 
+dotenv.config()
 
 const port = process.env.PORT || 8080
 
