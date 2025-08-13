@@ -1,7 +1,9 @@
 import { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import db from "../config/db";
-import { generateTokens } from "../utils/jwtUtils";
+import { generateAccessToken, generateTokens, verifyAccessToken, verifyRefreshToken } from "../utils/jwtUtils";
+import { tryCatch } from "bullmq";
+import { access } from "fs";
 
 export const registerController = async (req: Request, res: Response) => {
   try {
@@ -77,5 +79,39 @@ export const loginController = async (req: Request, res: Response) => {
     res.status(500).json({ error: `Server erros` })
     console.error(e)
     return;
+  }
+}
+
+export const validateJWTController = async (req: Request, res: Response) => {
+  try {
+    const { token, refreshToken, userId } = req.body
+    if (!token || !refreshToken || !userId) {
+      res.status(400).json({ error: "Missing data" })
+      return
+    }
+
+    const isAccessTokenValid = verifyAccessToken(token, userId)
+    const isRefreshTokenValid = verifyRefreshToken(refreshToken, userId)
+
+    if (!isAccessTokenValid && !isRefreshTokenValid) {
+      res.status(401).json({ error: "Tokens invalid, please login again" })
+      return
+    }
+
+    if (!isAccessTokenValid && isRefreshTokenValid) {
+      try {
+        const newAccessToken = generateAccessToken(userId)
+        res.status(200).json({ accessToken: newAccessToken })
+        return
+      } catch (e) {
+        res.status(500).json({ error: "Error generating a new access token" })
+        return
+      }
+
+    }
+
+    res.status(200).json({ accessToken: token, message: "Your access token is validated successfully" })
+  } catch (e) {
+    res.status(500).json({ error: "Internal server error" })
   }
 }
