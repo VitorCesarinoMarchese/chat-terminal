@@ -74,7 +74,18 @@ export const loginController = async (req: Request, res: Response) => {
       return;
     }
 
-    res.status(202).json({ message: `User ${user.username} logged suscessufuly` })
+    const { accessToken, refreshToken } = await generateTokens(user.id)
+
+    db.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        refreshToken: refreshToken
+      }
+    })
+
+    res.status(202).json({ accessToken: accessToken, refreshToken: refreshToken, message: `User ${user.username} logged suscessufuly` })
   } catch (e) {
     res.status(500).json({ error: `Server erros` })
     console.error(e)
@@ -112,6 +123,6 @@ export const validateJWTController = async (req: Request, res: Response) => {
 
     res.status(200).json({ accessToken: token, message: "Your access token is validated successfully" })
   } catch (e) {
-    res.status(500).json({ error: "Internal server error" })
+    res.status(500).json({ error: `Internal server error` })
   }
 }
