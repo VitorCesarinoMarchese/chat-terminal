@@ -8,30 +8,62 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
+  id           Int          @id @default(autoincrement())
+  username     String       @unique
   password     String
   refreshToken String
-  createdAt    DateTime @default(now())
-
-  messages Message[]
-  sessions Session[]
+  createdAt    DateTime     @default(now())
+  messages     Message[]
+  Chat         Chat[]
+  member       Member[]
+  requester    Friendship[] @relation(name: "request")
+  receiver     Friendship[] @relation(name: "receive")
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  user      String
-  text      String
-  timestamp DateTime
-  User      User?    @relation(fields: [userId], references: [id])
-  userId    Int?
+  id     Int      @id @default(autoincrement())
+  text   String
+  sentAt DateTime @default(now())
+  sentBy User     @relation(fields: [userId], references: [id])
+  userId Int
 }
 
-model Session {
-  id       Int      @id @default(autoincrement())
-  userId   Int      @unique
-  isOnline Boolean  @default(false)
-  lastSeen DateTime @updatedAt
+model Chat {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  createdBy User     @relation(fields: [userId], references: [id])
+  userId    Int
+  member    Member[]
+}
 
-  user User @relation(fields: [userId], references: [id])
+model Member {
+  id     Int  @id @default(autoincrement())
+  chat   Chat @relation(fields: [chatId], references: [id])
+  chatId Int
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+  role   Role @default(USER)
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requester   User             @relation(name: "request", fields: [requesterId], references: [id])
+  requesterId Int
+  receiver    User             @relation(name: "receive", fields: [receiverId], references: [id])
+  receiverId  Int
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum FriendshipStatus {
+  ACCEPTED
+  PENDING
+  REJECTED
+}
+
+enum Role {
+  USER
+  ADMIN
 }
