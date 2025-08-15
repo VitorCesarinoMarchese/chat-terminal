@@ -2,8 +2,6 @@ import { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import db from "../config/db";
 import { generateAccessToken, generateTokens, verifyAccessToken, verifyRefreshToken } from "../utils/jwtUtils";
-import { tryCatch } from "bullmq";
-import { access } from "fs";
 
 export const registerController = async (req: Request, res: Response) => {
   try {
