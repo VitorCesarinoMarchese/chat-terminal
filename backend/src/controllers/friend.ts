@@ -2,18 +2,21 @@ import { Request, Response } from "express"
 import { verifyAccessToken } from "../utils/jwtUtils"
 import db from "../config/db"
 
-export const sentFriendInvitationController = async (req: Request, res: Response) => {
+export const sendFriendInvitationController = async (req: Request, res: Response) => {
   try {
-    const headerToken = req.headers['authorization']
     const { senderUsername, receiverUsername } = req.body
     if (!senderUsername || !receiverUsername) {
       res.status(400).json({ error: "Missing data" })
       return
     }
 
+    let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(403).json({ error: "Access denied" });
+      res.status(401).json({ error: "Access denied" });
       return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
     }
 
     const sender = await db.user.findUnique({
@@ -23,14 +26,14 @@ export const sentFriendInvitationController = async (req: Request, res: Response
       select: { id: true }
     })
     if (!sender) {
-      res.status(400).json({ error: "Your user is incorrect" })
+      res.status(404).json({ error: "User not founded" })
       return
     }
     const senderId = sender.id
 
     const isAccessTokenValid = verifyAccessToken(headerToken, senderId.toString())
     if (!isAccessTokenValid) {
-      res.status(403).json({ error: "Invalid or expired Token" });
+      res.status(401).json({ error: "Invalid or expired Token" });
       return
     }
 
@@ -79,16 +82,19 @@ export const sentFriendInvitationController = async (req: Request, res: Response
 
 export const acceptFriendRequestController = async (req: Request, res: Response) => {
   try {
-    const headerToken = req.headers['authorization']
     const { requestId, username } = req.body
     if (!requestId || !username) {
       res.status(400).json({ error: "Missing data" })
       return
     }
 
+    let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(403).json({ error: "Access denied" });
+      res.status(401).json({ error: "Access denied" });
       return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
     }
 
     const user = await db.user.findUnique({
@@ -98,14 +104,14 @@ export const acceptFriendRequestController = async (req: Request, res: Response)
       select: { id: true }
     })
     if (!user) {
-      res.status(400).json({ error: "Your user is incorrect" })
+      res.status(404).json({ error: "User not founded" })
       return
     }
     const userId = user.id
 
     const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
     if (!isAccessTokenValid) {
-      res.status(403).json({ error: "Invalid or expired Token" });
+      res.status(401).json({ error: "Invalid or expired Token" });
       return
     }
 
@@ -130,24 +136,27 @@ export const acceptFriendRequestController = async (req: Request, res: Response)
       select: { id: true, status: true }
     })
 
-    res.status(201).json({ message: "Friendship request accepted successufuly", request: friendRequest })
+    res.status(200).json({ message: "Friendship request accepted successufuly", request: friendRequest })
   } catch (e) {
     res.status(500).json({ error: "Internal server error" })
   }
 }
 
-export const regectFriendRequestController = async (req: Request, res: Response) => {
+export const rejectFriendRequestController = async (req: Request, res: Response) => {
   try {
-    const headerToken = req.headers['authorization']
     const { requestId, username } = req.body
     if (!requestId || !username) {
       res.status(400).json({ error: "Missing data" })
       return
     }
 
+    let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(403).json({ error: "Access denied" });
+      res.status(401).json({ error: "Access denied" });
       return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
     }
 
     const user = await db.user.findUnique({
@@ -157,14 +166,14 @@ export const regectFriendRequestController = async (req: Request, res: Response)
       select: { id: true }
     })
     if (!user) {
-      res.status(400).json({ error: "Your user is incorrect" })
+      res.status(404).json({ error: "User not founded" })
       return
     }
     const userId = user.id
 
     const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
     if (!isAccessTokenValid) {
-      res.status(403).json({ error: "Invalid or expired Token" });
+      res.status(401).json({ error: "Invalid or expired Token" });
       return
     }
 
@@ -189,7 +198,57 @@ export const regectFriendRequestController = async (req: Request, res: Response)
       select: { id: true, status: true }
     })
 
-    res.status(201).json({ message: "Friendship request rejected successufuly", request: friendRequest })
+    res.status(200).json({ message: "Friendship request rejected successufuly", request: friendRequest })
+  } catch (e) {
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+export const seeFriendRequestController = async (req: Request, res: Response) => {
+  try {
+    const { username } = req.query
+    if (!username || typeof username !== 'string') {
+      res.status(400).json({ error: "Missing data" })
+      return
+    }
+
+    let headerToken = req.headers['authorization']
+    if (!headerToken) {
+      res.status(401).json({ error: "Access denied" });
+      return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
+    }
+
+    const user = await db.user.findUnique({
+      where: {
+        username: username
+      },
+      select: { id: true }
+    })
+    if (!user) {
+      res.status(404).json({ error: "User not founded" })
+      return
+    }
+    const userId = user.id
+
+    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
+    if (!isAccessTokenValid) {
+      res.status(401).json({ error: "Invalid or expired Token" });
+      return
+    }
+
+    const friendRequests = await db.friendship.findMany({
+      where: {
+        OR: [
+          { receiverId: userId },
+          { requesterId: userId }
+        ]
+      },
+      select: { id: true, status: true, receiverId: true, requesterId: true }
+    })
+    res.status(200).json({ friendRequests: friendRequests })
   } catch (e) {
     res.status(500).json({ error: "Internal server error" })
   }

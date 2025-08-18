@@ -1,7 +1,8 @@
 import express from "express"
 import http from "http"
-import cors from "cors"
+// import cors from "cors"
 import authRoutes from "../routes/authRoutes"
+import friendRoutes from "../routes/friendRoutes"
 import db from "./db"
 
 export const createServer = () => {
@@ -21,6 +22,7 @@ export const createServer = () => {
   // )
 
   app.use("/api/auth", authRoutes)
+  app.use("/api/friend", friendRoutes)
 
   return { app, server }
 }
