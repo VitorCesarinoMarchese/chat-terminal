@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { verifyAccessToken } from "../utils/jwtUtils"
+import { validateAccessToken, verifyAccessToken } from "../utils/jwtUtils"
 import db from "../config/db"
 
 export const sendFriendInvitationController = async (req: Request, res: Response) => {
@@ -19,23 +19,13 @@ export const sendFriendInvitationController = async (req: Request, res: Response
       headerToken = headerToken.slice(7);
     }
 
-    const sender = await db.user.findUnique({
-      where: {
-        username: senderUsername
-      },
-      select: { id: true }
-    })
-    if (!sender) {
-      res.status(404).json({ error: "User not founded" })
-      return
-    }
-    const senderId = sender.id
+    const isTokenValid = await validateAccessToken(senderUsername, headerToken)
 
-    const isAccessTokenValid = verifyAccessToken(headerToken, senderId.toString())
-    if (!isAccessTokenValid) {
-      res.status(401).json({ error: "Invalid or expired Token" });
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
+    const senderId = isTokenValid.id
 
     const receiver = await db.user.findUnique({
       where: {
@@ -97,21 +87,10 @@ export const acceptFriendRequestController = async (req: Request, res: Response)
       headerToken = headerToken.slice(7);
     }
 
-    const user = await db.user.findUnique({
-      where: {
-        username: username
-      },
-      select: { id: true }
-    })
-    if (!user) {
-      res.status(404).json({ error: "User not founded" })
-      return
-    }
-    const userId = user.id
+    const isTokenValid = await validateAccessToken(username, headerToken)
 
-    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
-    if (!isAccessTokenValid) {
-      res.status(401).json({ error: "Invalid or expired Token" });
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
 
@@ -159,24 +138,12 @@ export const rejectFriendRequestController = async (req: Request, res: Response)
       headerToken = headerToken.slice(7);
     }
 
-    const user = await db.user.findUnique({
-      where: {
-        username: username
-      },
-      select: { id: true }
-    })
-    if (!user) {
-      res.status(404).json({ error: "User not founded" })
+    const isTokenValid = await validateAccessToken(username, headerToken)
+
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
-    const userId = user.id
-
-    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
-    if (!isAccessTokenValid) {
-      res.status(401).json({ error: "Invalid or expired Token" });
-      return
-    }
-
     const isRequested = await db.friendship.findFirst({
       where: {
         id: requestId
@@ -221,23 +188,14 @@ export const seeFriendRequestController = async (req: Request, res: Response) =>
       headerToken = headerToken.slice(7);
     }
 
-    const user = await db.user.findUnique({
-      where: {
-        username: username
-      },
-      select: { id: true }
-    })
-    if (!user) {
-      res.status(404).json({ error: "User not founded" })
-      return
-    }
-    const userId = user.id
+    const isTokenValid = await validateAccessToken(username, headerToken)
 
-    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
-    if (!isAccessTokenValid) {
-      res.status(401).json({ error: "Invalid or expired Token" });
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
+
+    const userId = isTokenValid.id
 
     const friends = await db.friendship.findMany({
       where: {
@@ -280,23 +238,14 @@ export const seeFriendListsController = async (req: Request, res: Response) => {
       headerToken = headerToken.slice(7);
     }
 
-    const user = await db.user.findUnique({
-      where: {
-        username: username
-      },
-      select: { id: true }
-    })
-    if (!user) {
-      res.status(404).json({ error: "User not founded" })
-      return
-    }
-    const userId = user.id
+    const isTokenValid = await validateAccessToken(username, headerToken)
 
-    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
-    if (!isAccessTokenValid) {
-      res.status(401).json({ error: "Invalid or expired Token" });
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
+
+    const userId = isTokenValid.id
 
     const friends = await db.friendship.findMany({
       where: {

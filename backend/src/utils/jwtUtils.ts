@@ -8,6 +8,15 @@ type generatedTokens = {
   refreshToken: string
 }
 
+type validateToken = {
+  code: number,
+  error: string,
+  valid: boolean,
+  id: number
+}
+
+
+
 const jwtSecret = process.env.JWT_SECRET!
 const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET!
 if (!jwtSecret || !jwtRefreshSecret) {
@@ -75,4 +84,23 @@ export const verifyRefreshToken = (token: string, userId: string): boolean => {
   } catch (e) {
     return false
   }
+}
+
+export const validateAccessToken = async (username: string, headerToken: string): Promise<validateToken> => {
+  const user = await db.user.findUnique({
+    where: {
+      username: username
+    },
+    select: { id: true }
+  })
+  if (!user) {
+    return { code: 404, error: "User not founded", valid: false, id: -1 }
+  }
+  const userId = user.id
+
+  const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
+  if (!isAccessTokenValid) {
+    return { code: 401, error: "Invalid or expired Token", valid: false, id: -1 }
+  }
+  return { valid: true, id: userId, code: 200, error: "" }
 }
