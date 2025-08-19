@@ -138,7 +138,7 @@ export const acceptFriendRequestController = async (req: Request, res: Response)
 
     res.status(200).json({ message: "Friendship request accepted successufuly", request: friendRequest })
   } catch (e) {
-    res.status(500).json({ error: "Internal server error" })
+    res.status(500).json({ error: "Internal server error" + e })
   }
 }
 
@@ -239,7 +239,66 @@ export const seeFriendRequestController = async (req: Request, res: Response) =>
       return
     }
 
-    const friendRequests = await db.friendship.findMany({
+    const friends = await db.friendship.findMany({
+      where: {
+        OR: [
+          { receiverId: userId },
+          { requesterId: userId }
+        ],
+        AND: {
+          NOT:
+          {
+            OR: [
+              { status: "ACCEPTED" },
+              { status: "REJECTED" }
+            ]
+          }
+        }
+      },
+      select: { id: true, status: true, receiverId: true, requesterId: true }
+    })
+    res.status(200).json({ friendRequests: friends })
+  } catch (e) {
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+export const seeFriendListsController = async (req: Request, res: Response) => {
+  try {
+    const { username } = req.query
+    if (!username || typeof username !== 'string') {
+      res.status(400).json({ error: "Missing data" })
+      return
+    }
+
+    let headerToken = req.headers['authorization']
+    if (!headerToken) {
+      res.status(401).json({ error: "Access denied" });
+      return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
+    }
+
+    const user = await db.user.findUnique({
+      where: {
+        username: username
+      },
+      select: { id: true }
+    })
+    if (!user) {
+      res.status(404).json({ error: "User not founded" })
+      return
+    }
+    const userId = user.id
+
+    const isAccessTokenValid = verifyAccessToken(headerToken, userId.toString())
+    if (!isAccessTokenValid) {
+      res.status(401).json({ error: "Invalid or expired Token" });
+      return
+    }
+
+    const friends = await db.friendship.findMany({
       where: {
         OR: [
           { receiverId: userId },
@@ -248,7 +307,7 @@ export const seeFriendRequestController = async (req: Request, res: Response) =>
       },
       select: { id: true, status: true, receiverId: true, requesterId: true }
     })
-    res.status(200).json({ friendRequests: friendRequests })
+    res.status(200).json({ friendRequests: friends })
   } catch (e) {
     res.status(500).json({ error: "Internal server error" })
   }
