@@ -27,10 +27,13 @@ export const createChatController = async (req: Request, res: Response) => {
       return
     }
 
+
+    const userId = isTokenValid.id
+
     const chat = await db.chat.create({
       data: {
         name: name,
-        userId: isTokenValid.id,
+        userId: userId,
       },
       select: { id: true }
     })
@@ -50,6 +53,14 @@ export const createChatController = async (req: Request, res: Response) => {
         })
       }
     })
+    await db.member.create({
+      data: {
+        chatId: chat.id,
+        userId: userId,
+        role: 'ADMIN'
+      }
+    })
+
     res.status(201).json({ message: `Chat ${name} created` })
   } catch (error) {
     res.status(500).json({ error: `Server erros` })
@@ -58,26 +69,47 @@ export const createChatController = async (req: Request, res: Response) => {
 }
 
 export const seeAllChats = async (req: Request, res: Response) => {
-  const { username, members } = req.body
-  if (!username || !members || !Array.isArray(members)) {
-    res.status(400).json({ error: "Missing data" })
-    return
-  }
+  try {
+    const { username } = req.query
+    if (!username || typeof username != 'string') {
+      res.status(400).json({ error: "Missing data" })
+      return
+    }
 
-  let headerToken = req.headers['authorization']
-  if (!headerToken) {
-    res.status(401).json({ error: "Access denied" });
-    return;
-  }
-  if (headerToken.startsWith("Bearer ")) {
-    headerToken = headerToken.slice(7);
-  }
+    let headerToken = req.headers['authorization']
+    if (!headerToken) {
+      res.status(401).json({ error: "Access denied" });
+      return;
+    }
+    if (headerToken.startsWith("Bearer ")) {
+      headerToken = headerToken.slice(7);
+    }
 
-  const isTokenValid = await validateAccessToken(username, headerToken)
+    const isTokenValid = await validateAccessToken(username, headerToken)
 
-  if (!isTokenValid.valid) {
-    res.status(isTokenValid.code).json({ error: isTokenValid.error })
-    return
+    if (!isTokenValid.valid) {
+      res.status(isTokenValid.code).json({ error: isTokenValid.error })
+      return
+    }
+
+    const userId = isTokenValid.id
+
+
+    const userChats = await db.member.findMany({
+      where: { userId },
+      select: {
+        chat: {
+          select: {
+            name: true,
+            member: {
+              select: { user: { select: { username: true } } }
+            }
+          }
+        }
+      }
+    })
+    res.status(200).json({ message: "Chats find successefuly", userChats })
+  } catch (e) {
+    res.status(500).json({ error: "Internal server error" })
   }
-
 }
