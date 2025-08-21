@@ -188,6 +188,7 @@ export const seeFriendRequestController = async (req: Request, res: Response) =>
       headerToken = headerToken.slice(7);
     }
 
+
     const isTokenValid = await validateAccessToken(username, headerToken)
 
     if (!isTokenValid.valid) {
@@ -213,7 +214,12 @@ export const seeFriendRequestController = async (req: Request, res: Response) =>
           }
         }
       },
-      select: { id: true, status: true, receiverId: true, requesterId: true }
+      select: {
+        id: true,
+        status: true,
+        receiver: { select: { username: true } },
+        requester: { select: { username: true } }
+      }
     })
     res.status(200).json({ friendRequests: friends })
   } catch (e) {
@@ -254,7 +260,12 @@ export const seeFriendListsController = async (req: Request, res: Response) => {
           { requesterId: userId }
         ]
       },
-      select: { id: true, status: true, receiverId: true, requesterId: true }
+      select: {
+        id: true,
+        status: true,
+        receiver: { select: { username: true } },
+        requester: { select: { username: true } }
+      }
     })
     res.status(200).json({ friendRequests: friends })
   } catch (e) {
