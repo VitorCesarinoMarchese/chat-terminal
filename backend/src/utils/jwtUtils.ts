@@ -19,7 +19,6 @@ type validateToken = {
 
 const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET!
 const jwtSecret = process.env.JWT_SECRET!
-console.log(jwtSecret, jwtRefreshSecret)
 if (!jwtSecret || !jwtRefreshSecret) {
   throw new Error("Error missing jwt env variable")
 }
