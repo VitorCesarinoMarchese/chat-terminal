@@ -1,7 +1,7 @@
 import { WebSocketServer } from "ws"
 import { createServer } from "./config/server"
 import dotenv from "dotenv"
-import { websocketController } from "./controllers/websocke"
+import { websocketController } from "./controllers/websocket"
 
 dotenv.config()
 

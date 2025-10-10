@@ -1,5 +1,21 @@
 import db from "../config/db"
 
+export const isUserIdValid = async (userId: number): Promise<boolean> => {
+  try {
+    const user = await db.user.findUnique({
+      where: {
+        id: userId,
+      }
+    })
+    if (!user) {
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error("Error validating user", e)
+    return false
+  }
+}
 export const isUserValid = async (username: string): Promise<boolean> => {
   try {
     const user = await db.user.findUnique({

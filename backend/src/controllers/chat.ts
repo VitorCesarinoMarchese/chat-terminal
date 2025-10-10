@@ -152,7 +152,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
     })
 
     if (!findUserExist) {
-      res.status(400).json({ error: "Find user does not exist" })
+      res.status(400).json({ error: "User does not exist" })
       return
     }
     const findUserId = findUserExist.id
