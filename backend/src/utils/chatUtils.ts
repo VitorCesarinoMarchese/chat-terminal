@@ -22,7 +22,7 @@ export const chatValidation = async (chatId: number, userId: number) => {
       return false
     }
 
-    if (!chat.member.includes({ user: { id: userId } })) {
+    if (!chat.member.some(m => m.user.id === userId)) {
       return false
     }
 
