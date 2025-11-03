@@ -1,14 +1,18 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { validateAccessToken } from "../utils/jwtUtils";
 import { chatValidation } from "../utils/chatUtils";
-import { json } from "express";
-
+import z from "zod";
 
 interface Client {
   ws: WebSocket;
   userId: number;
   chatId: string;
 }
+
+const MessageSchema = z.object({
+  type: z.string(),
+  payload: z.any()
+})
 
 const clients = new Map<WebSocket, Client>();
 
@@ -21,11 +25,33 @@ export const websocketController = (wss: WebSocketServer) => {
     ws.on('error', console.error);
 
     ws.on("message", async (data) => {
-      const parseData = JSON.parse(data.toString())
+      let parseData
+      try {
+        parseData = JSON.parse(data.toString())
+      } catch (e) {
+        console.error("Invalid JSON received:", data.toString());
+        ws.send(JSON.stringify({
+          error: "Invalid JSON format",
+        }));
+        return;
+      }
 
-      switch (parseData.type) {
+      const safeData = MessageSchema.safeParse(parseData)
+
+      if (!safeData.success) {
+        console.error("Schema error:", safeData.error);
+        ws.send(JSON.stringify({
+          error: "Invalid message structure",
+          details: safeData.error,
+        }));
+        return;
+      }
+
+      const message = safeData.data
+
+      switch (message.type) {
         case "join": {
-          const { username, token, chatId } = parseData.payload;
+          const { username, token, chatId } = message.payload;
           const tokenData = await validateAccessToken(username, token)
 
           if (!tokenData.valid) {
