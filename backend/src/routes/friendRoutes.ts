@@ -7,7 +7,7 @@ const router = Router();
 router.post("/send", sendFriendInvitationController)
 router.post("/accept", acceptFriendRequestController)
 router.post("/reject", rejectFriendRequestController)
-router.get("/friend-requests", seeFriendRequestController)
-router.get("/friend-list", seeFriendListsController)
+router.get("/requests", seeFriendRequestController)
+router.get("/list", seeFriendListsController)
 
 export default router

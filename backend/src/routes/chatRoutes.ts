@@ -5,7 +5,7 @@ import { createChatController, getAllChats, getChatsWithUser } from "../controll
 const router = Router();
 
 router.post("/create", createChatController)
-router.get("/from", getAllChats)
+router.get("/all", getAllChats)
 router.get("/with", getChatsWithUser)
 
 export default router
