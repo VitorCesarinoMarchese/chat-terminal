@@ -26,15 +26,18 @@ model Message {
   sentAt DateTime @default(now())
   sentBy User     @relation(fields: [userId], references: [id])
   userId Int
+  chat   Chat     @relation(fields: [chatId], references: [id])
+  chatId Int
 }
 
 model Chat {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  createdAt DateTime @default(now())
-  createdBy User     @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  createdBy User      @relation(fields: [userId], references: [id])
   userId    Int
   member    Member[]
+  messages  Message[]
 }
 
 model Member {

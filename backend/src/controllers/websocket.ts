@@ -2,11 +2,13 @@ import WebSocket, { WebSocketServer } from "ws"
 import { validateAccessToken } from "../utils/jwtUtils"
 import { chatValidation } from "../utils/chatUtils"
 import z from "zod"
+import db from "../config/db"
 
 interface Client {
   ws: WebSocket
   userId: number
-  chatId: string
+  chatId: number
+  lastMessageTime?: number
 }
 
 const MessageSchema = z.object({
@@ -36,6 +38,14 @@ export const websocketController = (wss: WebSocketServer) => {
 
     ws.on('error', console.error)
 
+    ws.on('close', () => {
+      const client = clients.get(ws)
+      if (client) {
+        console.log(`Client ${client.userId} disconnected from chat ${client.chatId}`)
+      }
+      clients.delete(ws)
+    })
+
     ws.on("message", async (data) => {
       let parseData
       try {
@@ -62,13 +72,15 @@ export const websocketController = (wss: WebSocketServer) => {
       const message = safeData.data
 
       switch (message.type) {
+
         case "join": {
 
           const safePayload = JoinPayloadSchema.safeParse(message.payload)
-          if (safePayload.success) {
+          if (!safePayload.success) {
             console.error("Schema error:", safePayload.error)
             ws.send(JSON.stringify({
-              error: "Invalid payload structure",
+              type: "error",
+              message: "Invalid payload structure",
               details: safePayload.error,
             }))
             return
@@ -90,8 +102,33 @@ export const websocketController = (wss: WebSocketServer) => {
             return
           }
 
-          clients.set(ws, { ws, userId: tokenData.id, chatId })
-          ws.send(JSON.stringify({ type: "joined", chatId }))
+          const existingClient = clients.get(ws)
+
+          if (existingClient) {
+            const oldChatId = existingClient.chatId
+            console.log(`user ${username} leaving chat ${oldChatId}`)
+
+            clients.forEach((otherClient) => {
+              if (otherClient.chatId === oldChatId && otherClient.ws !== ws) {
+                otherClient.ws.send(JSON.stringify({
+                  type: "user_left",
+                  data: { username, chatId: oldChatId }
+                }))
+              }
+            })
+          }
+
+          clients.set(ws, { ws, userId: tokenData.id, chatId: Number(chatId) })
+          ws.send(JSON.stringify({ type: "joined", chatId: Number(chatId) }))
+
+          clients.forEach((otherClient) => {
+            if (otherClient.chatId === chatId && otherClient.ws !== ws) {
+              otherClient.ws.send(JSON.stringify({
+                type: "user_joined",
+                data: { username, chatId: Number(chatId) }
+              }))
+            }
+          })
 
           console.log(`User ${username} joined the chat ${chatId}`)
           break
@@ -100,30 +137,75 @@ export const websocketController = (wss: WebSocketServer) => {
         case "chat": {
 
           const safePayload = ChatPayloadSchema.safeParse(message.payload)
-          if (safePayload.success) {
+          if (!safePayload.success) {
             console.error("Schema error:", safePayload.error)
             ws.send(JSON.stringify({
-              error: "Invalid payload structure",
+              type: "error",
+              message: "Invalid payload structure",
               details: safePayload.error,
             }))
             return
           }
 
-          const { username, token, text } = message.payload
-          const tokenData = await validateAccessToken(username, token)
-
-          if (!tokenData.valid) {
-            ws.send(JSON.stringify({ type: "error", message: "Invalid token" }))
-            ws.close()
-            return
-          }
+          const { username, text } = message.payload
 
           if (!clients.has(ws)) {
-            console.error("Client dosen't have joined a chat\n websocket:", ws)
-            ws.send("You are not in a chat, join one before sending messages")
+            console.error("Client doesn't have joined the chat\n userId:", username)
+            ws.send(JSON.stringify({
+              type: "error",
+              message: "You are not in a chat, join one before sending messages"
+            }))
             return
           }
 
+          const client = clients.get(ws)!
+          const { chatId, userId } = client
+          const now = Date.now()
+          if (client.lastMessageTime && now - client.lastMessageTime < 500) {
+            ws.send(JSON.stringify({ type: "error", message: "Too many messages" }))
+            return
+          }
+          client.lastMessageTime = now
+
+          try {
+            const dbMessage = await db.message.create({
+              data: {
+                userId,
+                text,
+                chatId
+              }
+            })
+            console.log(`message created in db: ${dbMessage}`)
+
+            clients.forEach((otherClient) => {
+              if (otherClient.chatId === chatId) {
+                otherClient.ws.send(JSON.stringify({
+                  type: "message", data: {
+                    id: dbMessage.id,
+                    username,
+                    text,
+                    timestamp: dbMessage.sentAt
+                  }
+                }))
+                console.log(`Message Sent to user: ${otherClient.userId}`)
+              }
+            })
+
+          } catch (e) {
+            console.error(`error during message sending: ${e}`)
+            ws.send(JSON.stringify({
+              type: "error",
+              message: "Failed to send message",
+            }))
+          }
+
+          break
+        }
+        default: {
+          ws.send(JSON.stringify({
+            type: "error",
+            message: `Unknown message type: ${message.type}`
+          }))
         }
       }
     })
