@@ -1,52 +1,159 @@
-# chat-terminal
+# Chat Terminal
 
-## Idea
+Chat Terminal is a terminal-first messaging project with two parts:
 
-Create a chat application for the terminal, using Go for the TUI and (whatever Guillermo wants) for the backend.
+1. A **TypeScript backend** that handles authentication, friendships, chats, and real-time messaging.
+2. A **Go TUI client** focused on terminal UX and local user state.
 
-## State Management
+It is designed as a portfolio-ready full-stack system that combines API design, persistent data modeling, and WebSocket communication.
 
-After the user logs in, the JWT tokens are stored along with their username and # in a SQLite database, which in the future can also be used as some form of cache (for example, instead of the user requesting the whole conversation every time they enter it, they would only request new messages).
+## Core Capabilities
 
-## Login
+- Account registration and login with JWT access and refresh tokens
+- Token validation and access token renewal flow
+- Friendship requests (send, accept, reject, list)
+- Chat creation and chat lookup by participant
+- Real-time chat messages over WebSocket
+- Message persistence in SQLite via Prisma
+- Multi-screen terminal interface built with `tview`
 
-The user sends a request with their email and password, and if everything is correct, they receive a JWT and a refreshJWT to stay logged in. If they do not access the app for 14 days, the refreshJWT expires, and at the top of the screen something like “========= tept =========” will appear.
+## Architecture
 
-## Registration
+| Layer | Stack | Purpose |
+| --- | --- | --- |
+| Backend API | Node.js, TypeScript, Express | HTTP endpoints for auth, friendships, and chats |
+| Real-time Transport | `ws` | WebSocket chat events and broadcast |
+| Backend Persistence | Prisma + SQLite | Users, chats, memberships, friendships, messages |
+| TUI Client | Go, `tview`, `tcell` | Interactive terminal UI |
+| TUI Local State | GORM + SQLite | Local persisted session-related data |
 
-The user creates an email, username, and password, and receives the same JWTs as in the login if everything works correctly. Also, next to their username, a # will appear, which will be the identifier used to add friends.
+## Repository Structure
 
-## Features
+```text
+backend/   TypeScript API + WebSocket server + Prisma schema
+tui/       Go terminal user interface
+```
 
-- **Realtime chat**
-  Use WebSockets for communication between back and front end.
-- **Group chats**
-  Create a join table? Think more about it.
-- **Audio message support**
-  Research how to do this. Future feature.
-- **Send files?**
-  Research how to do this. Future feature.
-- **Image support (profile pic and messages)**
-  Apparently, tview supports images; how we’re going to send them is another story.
-- **Friend list**
-  Create a join table? Think more about it.
+## Getting Started
 
-## Menu
+### Prerequisites
 
-- **Home**
-  - Account
-    - Login
-    - Register
-  - Account _Post-login_
-    - Username
-    - Password
-    - Quit
-  - Chat
-    - Contacts
-      - Add contact
-      - List of contacts
-    - Groups
-      - Add groups
-      - List of groups
-    - Quit
-  - Quit
+- Node.js and npm
+- Go 1.24+
+- SQLite (file-based, created locally)
+- Optional: Redis (helper utilities exist in backend config)
+
+### Run the Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+
+```env
+JWT_SECRET=replace_with_access_secret
+JWT_REFRESH_SECRET=replace_with_refresh_secret
+REDIS_URL=redis://localhost:6379
+# Optional override
+# PORT=8080
+```
+
+Apply database migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+Start the API:
+
+```bash
+npm run dev
+```
+
+Current port behavior:
+
+- If `PORT` is **not** set: HTTP on `http://localhost:8080` and WebSocket on `ws://localhost:3030`
+- If `PORT` **is** set: both services use that same value
+
+### Run the TUI
+
+```bash
+cd tui
+go mod download
+go run ./cmd
+```
+
+The TUI creates local state in `tui/internal/state/test.db`.
+
+## HTTP API Surface
+
+### Auth
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/jwt`
+
+### Friends
+
+- `POST /api/friend/send`
+- `POST /api/friend/accept`
+- `POST /api/friend/reject`
+- `GET /api/friend/requests`
+- `GET /api/friend/list`
+
+### Chats
+
+- `POST /api/chat/create`
+- `GET /api/chat/all`
+- `GET /api/chat/with`
+
+## WebSocket Message Shape
+
+Client messages follow:
+
+```json
+{
+  "type": "join | chat",
+  "payload": {}
+}
+```
+
+Join a chat:
+
+```json
+{
+  "type": "join",
+  "payload": {
+    "username": "alice",
+    "token": "<access_token>",
+    "chatId": "1"
+  }
+}
+```
+
+Send a chat message:
+
+```json
+{
+  "type": "chat",
+  "payload": {
+    "username": "alice",
+    "token": "<access_token>",
+    "text": "Hello from terminal"
+  }
+}
+```
+
+## Data Model Overview
+
+- **User**: username, password hash, refresh token
+- **Friendship**: requester, receiver, status
+- **Chat**: name, creator, members
+- **Member**: user-to-chat relation with role
+- **Message**: text, sender, chat, timestamp
+
+## License
+
+MIT License. See `LICENSE`.
