@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { db, disconnectTestDatabase, resetTestDatabase } from "../setup/db";
 import { chatValidation } from "../../../src/utils/chatUtils";
+import * as userUtils from "../../../src/utils/userUtils";
 
 async function createUser(username: string) {
   return db.user.create({
@@ -42,6 +43,17 @@ describe("chatUtils", () => {
     });
 
     await expect(chatValidation(chat.id, outsider.id)).resolves.toBe(false);
+  });
+
+  it("chatValidation short-circuits when user id is invalid", async () => {
+    const isUserIdValidSpy = jest
+      .spyOn(userUtils, "isUserIdValid")
+      .mockResolvedValueOnce(false);
+    const findUniqueSpy = jest.spyOn(db.chat, "findUnique");
+
+    await expect(chatValidation(12345, 67890)).resolves.toBe(false);
+    expect(isUserIdValidSpy).toHaveBeenCalledWith(67890);
+    expect(findUniqueSpy).not.toHaveBeenCalled();
   });
 
   it("chatValidation returns true when user is a member", async () => {
