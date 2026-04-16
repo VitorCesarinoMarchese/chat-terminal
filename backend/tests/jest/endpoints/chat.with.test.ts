@@ -110,6 +110,17 @@ describe("GET /api/chat/with", () => {
     expect(response.status).toBe(404);
   });
 
+  it("returns 400 when findUser does not exist", async () => {
+    const { alice } = await seedSharedChats(running.baseHttpUrl);
+    const response = await getJson(
+      running.baseHttpUrl,
+      `/api/chat/with?username=${alice.username}&findUser=missing-target-user`,
+      alice.accessToken
+    );
+
+    expect(response.status).toBe(400);
+  });
+
   it("returns 500 for deterministic DB failure", async () => {
     const { alice, bob } = await seedSharedChats(running.baseHttpUrl);
     mockRejectedOnce(db.chat, "findMany", "chat-with-findMany-failure");

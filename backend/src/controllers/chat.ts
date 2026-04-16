@@ -30,35 +30,56 @@ export const createChatController = async (req: Request, res: Response) => {
 
     const userId = isTokenValid.id
 
-    const chat = await db.chat.create({
-      data: {
-        name: name,
-        userId: userId,
-      },
-      select: { id: true }
-    })
+    const memberIds: number[] = []
+    for (const member of members) {
+      if (typeof member !== "string" || member.trim().length === 0) {
+        res.status(400).json({ error: "Invalid member username" })
+        return
+      }
 
-    members.map(async (member: string) => {
       const validUser = await isUserValid(member)
       if (!validUser) {
         res.status(400).json({ error: `User ${member} is not valid` })
         return
-      } else {
-        await db.member.create({
-          data: {
+      }
+
+      const memberId = await getUserId(member)
+      if (memberId === -1) {
+        res.status(400).json({ error: `User ${member} is not valid` })
+        return
+      }
+
+      if (memberId !== userId && !memberIds.includes(memberId)) {
+        memberIds.push(memberId)
+      }
+    }
+
+    await db.$transaction(async (tx) => {
+      const chat = await tx.chat.create({
+        data: {
+          name: name,
+          userId: userId,
+        },
+        select: { id: true }
+      })
+
+      if (memberIds.length > 0) {
+        await tx.member.createMany({
+          data: memberIds.map((memberId) => ({
             chatId: chat.id,
-            userId: await getUserId(member),
-            role: 'USER'
-          }
+            userId: memberId,
+            role: "USER"
+          }))
         })
       }
-    })
-    await db.member.create({
-      data: {
-        chatId: chat.id,
-        userId: userId,
-        role: 'ADMIN'
-      }
+
+      await tx.member.create({
+        data: {
+          chatId: chat.id,
+          userId: userId,
+          role: 'ADMIN'
+        }
+      })
     })
 
     res.status(201).json({ message: `Chat ${name} created` })
@@ -144,7 +165,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
 
     const findUserExist = await db.user.findFirst({
       where: {
-        username: username
+        username: findUser
       },
       select: {
         id: true

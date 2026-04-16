@@ -154,6 +154,34 @@ describe("POST /api/chat/create", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns 400 and does not create chat when any member username is invalid", async () => {
+    const alice = await registerUser(
+      running.baseHttpUrl,
+      uniqueUsername("alice"),
+      USERS.alice.password
+    );
+    const chatName = `invalid-member-${randomUUID().slice(0, 8)}`;
+
+    const response = await postJson(
+      running.baseHttpUrl,
+      "/api/chat/create",
+      {
+        name: chatName,
+        username: alice.username,
+        members: ["user-does-not-exist"],
+      },
+      alice.accessToken
+    );
+
+    expect(response.status).toBe(400);
+
+    const createdChat = await db.chat.findFirst({
+      where: { name: chatName, userId: alice.userId },
+      select: { id: true },
+    });
+    expect(createdChat).toBeNull();
+  });
+
   it("returns 401 when auth token is missing", async () => {
     const response = await postJson(running.baseHttpUrl, "/api/chat/create", {
       name: CHATS.general.name,
@@ -213,7 +241,7 @@ describe("POST /api/chat/create", () => {
       uniqueUsername("alice"),
       USERS.alice.password
     );
-    mockRejectedOnce(db.chat, "create", "chat-create-failure");
+    mockRejectedOnce(db, "$transaction", "chat-create-failure");
 
     const response = await postJson(
       running.baseHttpUrl,
