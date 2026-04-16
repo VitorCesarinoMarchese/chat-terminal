@@ -23,7 +23,7 @@ It is designed as a portfolio-ready full-stack system that combines API design, 
 | --- | --- | --- |
 | Backend API | Node.js, TypeScript, Express | HTTP endpoints for auth, friendships, and chats |
 | Real-time Transport | `ws` | WebSocket chat events and broadcast |
-| Backend Persistence | Prisma + SQLite | Users, chats, memberships, friendships, messages |
+| Backend Persistence | Prisma (PostgreSQL runtime, SQLite tests) | Users, chats, memberships, friendships, messages |
 | TUI Client | Go, `tview`, `tcell` | Interactive terminal UI |
 | TUI Local State | GORM + SQLite | Local persisted session-related data |
 
@@ -42,6 +42,7 @@ tui/       Go terminal user interface
 - Go 1.24+
 - SQLite (file-based, created locally)
 - Optional: Redis (helper utilities exist in backend config)
+- Docker and Docker Compose (for containerized runtime)
 
 ### Run the Backend
 
@@ -76,6 +77,38 @@ Current port behavior:
 
 - If `PORT` is **not** set: HTTP on `http://localhost:8080` and WebSocket on `ws://localhost:3030`
 - If `PORT` **is** set: both services use that same value
+
+### Run with Docker Compose
+
+From repository root:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- `backend` (TypeScript API + WebSocket)
+- `postgres` (runtime database)
+- `redis` (cache/infrastructure service)
+
+Default runtime endpoints:
+
+- HTTP: `http://localhost:8080`
+- WebSocket: `ws://localhost:3030`
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+
+Runtime DB strategy:
+
+- Docker runtime uses PostgreSQL (`prisma/schema.postgres.prisma`).
+- Jest tests remain SQLite-isolated (`prisma/schema.prisma` + `tests/.tmp` database files).
+
+Run backend tests in containerized environment:
+
+```bash
+docker compose run --rm backend npm test
+```
 
 ### Run the TUI
 

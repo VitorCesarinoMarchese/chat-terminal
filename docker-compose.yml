@@ -1,0 +1,73 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    command: >
+      sh -c "
+      npx prisma generate --schema prisma/schema.postgres.prisma &&
+      npx prisma db push --skip-generate --schema prisma/schema.postgres.prisma &&
+      npm run dev
+      "
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/chat_terminal?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-docker-access-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-docker-refresh-secret}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "3030:3030"
+    restart: unless-stopped
+    networks:
+      - chat-terminal-net
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chat_terminal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chat_terminal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - chat-terminal-net
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - chat-terminal-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  chat-terminal-net:
+    driver: bridge
+
