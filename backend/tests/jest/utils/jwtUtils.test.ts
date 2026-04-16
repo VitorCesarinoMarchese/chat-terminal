@@ -46,6 +46,16 @@ describe("jwtUtils", () => {
     expect(accessToken.length).toBeGreaterThan(10);
   });
 
+  it("generateTokens throws when user does not exist", async () => {
+    await expect(generateTokens(999999)).rejects.toThrow("Error user not found");
+  });
+
+  it("generateAccessToken throws when user does not exist", async () => {
+    await expect(generateAccessToken(999999)).rejects.toThrow(
+      "Error user not found"
+    );
+  });
+
   it("verifyAccessToken returns true for matching userId", async () => {
     const user = await createUser("jwt-utils-verify-access");
     const { accessToken } = await generateTokens(user.id);
