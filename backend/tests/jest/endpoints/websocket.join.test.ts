@@ -43,6 +43,46 @@ async function seedChatForUser() {
   return { alice, chatId: chat.id };
 }
 
+async function seedRejoinScenario() {
+  const alice = await createSocketUser(USERS.alice.username);
+  const bob = await createSocketUser(USERS.bob.username);
+
+  const firstChat = await db.chat.create({
+    data: { name: `${CHATS.general.name}-old`, userId: alice.userId },
+    select: { id: true },
+  });
+  const secondChat = await db.chat.create({
+    data: { name: `${CHATS.project.name}-new`, userId: alice.userId },
+    select: { id: true },
+  });
+
+  await db.member.createMany({
+    data: [
+      { chatId: firstChat.id, userId: alice.userId, role: "ADMIN" },
+      { chatId: firstChat.id, userId: bob.userId, role: "USER" },
+      { chatId: secondChat.id, userId: alice.userId, role: "ADMIN" },
+    ],
+  });
+
+  return { alice, bob, firstChatId: firstChat.id, secondChatId: secondChat.id };
+}
+
+async function joinChat(socket: WebSocket, user: SocketUserSession, chatId: number) {
+  sendJson(socket, {
+    type: "join",
+    payload: {
+      username: user.username,
+      token: user.accessToken,
+      chatId: String(chatId),
+    },
+  });
+
+  await waitForJsonMessage(
+    socket,
+    (value) => value.type === "joined" && value.chatId === chatId
+  );
+}
+
 describe("WebSocket join flow", () => {
   let running: RunningTestServer;
 
@@ -222,6 +262,63 @@ describe("WebSocket join flow", () => {
       expect(message.message).toBe("Chat not found or unauthorized");
     } finally {
       await closeSocket(socket);
+    }
+  });
+
+  it("returns unknown type error for unsupported message type", async () => {
+    const socket = await openSocket(running.baseWsUrl);
+
+    try {
+      sendJson(socket, { type: "unsupported_type", payload: {} });
+      const message = await waitForJsonMessage(
+        socket,
+        (value) =>
+          value.type === "error" &&
+          value.message === "Unknown message type: unsupported_type"
+      );
+
+      expect(message.message).toBe("Unknown message type: unsupported_type");
+    } finally {
+      await closeSocket(socket);
+    }
+  });
+
+  it("emits user_left when a socket switches from one chat to another", async () => {
+    const { alice, bob, firstChatId, secondChatId } = await seedRejoinScenario();
+    const aliceSocket = await openSocket(running.baseWsUrl);
+    const bobSocket = await openSocket(running.baseWsUrl);
+
+    try {
+      await joinChat(bobSocket, bob, firstChatId);
+      await joinChat(aliceSocket, alice, firstChatId);
+
+      sendJson(aliceSocket, {
+        type: "join",
+        payload: {
+          username: alice.username,
+          token: alice.accessToken,
+          chatId: String(secondChatId),
+        },
+      });
+
+      const switched = await waitForJsonMessage(
+        aliceSocket,
+        (value) => value.type === "joined" && value.chatId === secondChatId
+      );
+      expect(switched.chatId).toBe(secondChatId);
+
+      const userLeft = await waitForJsonMessage(
+        bobSocket,
+        (value) =>
+          value.type === "user_left" &&
+          (value.data as { username?: string; chatId?: number }).username === alice.username &&
+          (value.data as { username?: string; chatId?: number }).chatId === firstChatId
+      );
+
+      expect(userLeft.type).toBe("user_left");
+    } finally {
+      await closeSocket(aliceSocket);
+      await closeSocket(bobSocket);
     }
   });
 });
