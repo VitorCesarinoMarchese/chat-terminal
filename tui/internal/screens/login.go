@@ -1,8 +1,6 @@
 package screens
 
 import (
-	"log"
-
 	"github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
 	"github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
 	"github.com/gdamore/tcell/v2"
@@ -12,7 +10,7 @@ import (
 func loginState(email string, password string, switchScreen func(name string)) {
 	dbu, err := db.GetDB()
 	if err != nil {
-		log.Fatal(err)
+		switchScreen("auth")
 		return
 	}
 
