@@ -15,11 +15,14 @@ func Home(app *tview.Application, switchScreen func(name string)) tview.Primitiv
 		{Title: "Chat", Desc: "Chat with friends", Shortcut: 'c', F: func() {
 			switchScreen("chatmenu")
 		}},
-		{Title: "Quit", Desc: "Press to exit", Shortcut: 'q', F: func() {
-			app.Stop()
+		{Title: "Account", Desc: "Manage profile settings", Shortcut: 'm', F: func() {
+			switchScreen("account")
 		}},
 		{Title: "Test", Desc: "Press to test", Shortcut: 't', F: func() {
 			switchScreen("test")
+		}},
+		{Title: "Quit", Desc: "Press to exit", Shortcut: 'q', F: func() {
+			app.Stop()
 		}},
 	}
 	list := widgets.Menu(items)

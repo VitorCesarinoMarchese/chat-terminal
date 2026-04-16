@@ -16,8 +16,8 @@ func TestHomeMenuRoutesToExpectedPages(t *testing.T) {
 	})
 
 	list := listFromScreen(t, home)
-	if list.GetItemCount() != 4 {
-		t.Fatalf("expected 4 home menu entries, got %d", list.GetItemCount())
+	if list.GetItemCount() != 5 {
+		t.Fatalf("expected 5 home menu entries, got %d", list.GetItemCount())
 	}
 
 	if main, _ := list.GetItemText(0); main != "Auth" {
@@ -28,16 +28,21 @@ func TestHomeMenuRoutesToExpectedPages(t *testing.T) {
 		t.Fatalf("expected second home item to be Chat, got %q", main)
 	}
 
+	if main, _ := list.GetItemText(2); main != "Account" {
+		t.Fatalf("expected third home item to be Account, got %q", main)
+	}
+
 	if main, _ := list.GetItemText(3); main != "Test" {
 		t.Fatalf("expected fourth home item to be Test, got %q", main)
 	}
 
 	list.GetItemSelectedFunc(0)()
 	list.GetItemSelectedFunc(1)()
+	list.GetItemSelectedFunc(2)()
 	list.GetItemSelectedFunc(3)()
-	list.GetItemSelectedFunc(2)() // Quit should not panic.
+	list.GetItemSelectedFunc(4)() // Quit should not panic.
 
-	expected := []string{"auth", "chatmenu", "test"}
+	expected := []string{"auth", "chatmenu", "account", "test"}
 	if len(routes) != len(expected) {
 		t.Fatalf("expected %d route events, got %d (%v)", len(expected), len(routes), routes)
 	}
@@ -83,7 +88,7 @@ func TestAuthChatAndAccountMenusRouteAsExpected(t *testing.T) {
 	expected := []string{
 		"login", "register", "home",
 		"contacts", "groups", "home",
-		"login", "password", "home",
+		"username", "password", "home",
 	}
 	if len(routes) != len(expected) {
 		t.Fatalf("expected %d route events, got %d (%v)", len(expected), len(routes), routes)
@@ -122,11 +127,48 @@ func TestRegisterAndPasswordFormsExposeExpectedNavigation(t *testing.T) {
 	}
 }
 
+func TestContactsGroupsAndUsernameScreensRouteBack(t *testing.T) {
+	var routes []string
+	switchScreen := func(name string) {
+		routes = append(routes, name)
+	}
+
+	contactsList := listFromScreen(t, internalscreens.Contacts(switchScreen))
+	groupsList := listFromScreen(t, internalscreens.Groups(switchScreen))
+	usernameForm := formFromScreen(t, internalscreens.UsernameChange(switchScreen))
+
+	if contactsList.GetItemCount() != 1 {
+		t.Fatalf("expected 1 contacts entry, got %d", contactsList.GetItemCount())
+	}
+	if groupsList.GetItemCount() != 1 {
+		t.Fatalf("expected 1 groups entry, got %d", groupsList.GetItemCount())
+	}
+
+	contactsList.GetItemSelectedFunc(0)() // Back to chat menu.
+	groupsList.GetItemSelectedFunc(0)()   // Back to chat menu.
+	pressFormButton(t, usernameForm, 0)   // Save
+	pressFormButton(t, usernameForm, 1)   // Quit
+
+	expected := []string{"chatmenu", "chatmenu", "account", "account"}
+	if len(routes) != len(expected) {
+		t.Fatalf("expected %d route events, got %d (%v)", len(expected), len(routes), routes)
+	}
+	for i := range expected {
+		if routes[i] != expected[i] {
+			t.Fatalf("expected route %d to be %q, got %q", i, expected[i], routes[i])
+		}
+	}
+}
+
 func TestPagesRegisterAllExpectedScreens(t *testing.T) {
 	app := tview.NewApplication()
 	pages := internalscreens.NewPages(app)
 
-	expectedPages := []string{"home", "auth", "login", "register", "chatmenu", "account", "password", "test"}
+	expectedPages := []string{
+		"home", "auth", "login", "register",
+		"chatmenu", "contacts", "groups",
+		"account", "username", "password", "test",
+	}
 	for _, page := range expectedPages {
 		if !pages.HasPage(page) {
 			t.Fatalf("expected pages to include %q", page)
