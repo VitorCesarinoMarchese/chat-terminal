@@ -15,6 +15,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-docker-access-secret}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-docker-refresh-secret}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REPO_ROOT: /workspace
       NODE_ENV: development
     depends_on:
       postgres:
@@ -24,6 +25,8 @@ services:
     ports:
       - "8080:8080"
       - "3030:3030"
+    volumes:
+      - ./:/workspace:ro
     restart: unless-stopped
     networks:
       - chat-terminal-net
@@ -70,4 +73,3 @@ volumes:
 networks:
   chat-terminal-net:
     driver: bridge
-

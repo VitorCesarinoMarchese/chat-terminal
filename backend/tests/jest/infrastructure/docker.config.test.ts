@@ -1,10 +1,23 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "@jest/globals";
 
 function readRepoFile(relativePath: string) {
-  const repoRoot = resolve(process.cwd(), "..");
-  return readFileSync(resolve(repoRoot, relativePath), "utf8");
+  const candidateRoots = [
+    process.env.REPO_ROOT,
+    "/workspace",
+    resolve(process.cwd(), ".."),
+    process.cwd(),
+  ].filter((value): value is string => Boolean(value));
+
+  for (const root of candidateRoots) {
+    const filePath = resolve(root, relativePath);
+    if (existsSync(filePath)) {
+      return readFileSync(filePath, "utf8");
+    }
+  }
+
+  throw new Error(`Unable to find ${relativePath} in candidate roots: ${candidateRoots.join(", ")}`);
 }
 
 describe("docker configuration", () => {
