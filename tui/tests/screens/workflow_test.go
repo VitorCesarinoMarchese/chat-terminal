@@ -1,16 +1,26 @@
 package screens_test
 
 import (
+	"errors"
 	"testing"
 
 	internaldb "github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
 	internalmodels "github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
 	internalscreens "github.com/VitorCesarinoMarchese/chat-terminal/internal/screens"
+	internalservices "github.com/VitorCesarinoMarchese/chat-terminal/internal/services"
 	"github.com/rivo/tview"
 )
 
 func TestWorkflowHomeAuthLoginToChatMenu(t *testing.T) {
 	setupScreenTestDB(t, true)
+	useFakeAuthClient(t, &fakeAuthClient{
+		loginResult: internalservices.AuthSession{
+			Username:     "workflow@example.com",
+			AccessToken:  "workflow-access",
+			RefreshToken: "workflow-refresh",
+			UserID:       2,
+		},
+	})
 
 	app := tview.NewApplication()
 	pages := internalscreens.NewPages(app)
@@ -38,7 +48,7 @@ func TestWorkflowHomeAuthLoginToChatMenu(t *testing.T) {
 
 	loginForm := formFromScreen(t, primitive)
 	setFormInput(t, loginForm, "Email", "workflow@example.com")
-	setFormInput(t, loginForm, "Password", "workflow-token")
+	setFormInput(t, loginForm, "Password", "workflow-password")
 	pressFormButton(t, loginForm, 0)
 
 	front, _ = pages.GetFrontPage()
@@ -61,7 +71,10 @@ func TestWorkflowHomeAuthLoginToChatMenu(t *testing.T) {
 }
 
 func TestWorkflowLoginFailureReturnsToAuth(t *testing.T) {
-	_ = internaldb.CloseDB()
+	setupScreenTestDB(t, true)
+	useFakeAuthClient(t, &fakeAuthClient{
+		loginErr: errors.New("invalid credentials"),
+	})
 
 	app := tview.NewApplication()
 	pages := internalscreens.NewPages(app)
@@ -87,4 +100,3 @@ func TestWorkflowLoginFailureReturnsToAuth(t *testing.T) {
 		t.Fatalf("expected auth page after failed workflow login, got %q", front)
 	}
 }
-

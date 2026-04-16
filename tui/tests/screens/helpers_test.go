@@ -6,6 +6,8 @@ import (
 
 	internaldb "github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
 	internalmodels "github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
+	internalscreens "github.com/VitorCesarinoMarchese/chat-terminal/internal/screens"
+	internalservices "github.com/VitorCesarinoMarchese/chat-terminal/internal/services"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -22,6 +24,38 @@ func setupScreenTestDB(t *testing.T, withMigrations bool) {
 
 	t.Cleanup(func() {
 		_ = internaldb.CloseDB()
+		internalscreens.ResetAuthClientForTests()
+	})
+}
+
+type fakeAuthClient struct {
+	loginResult    internalservices.AuthSession
+	loginErr       error
+	registerResult internalservices.AuthSession
+	registerErr    error
+	loginCalls     int
+	registerCalls  int
+}
+
+func (f *fakeAuthClient) Login(username string, password string) (internalservices.AuthSession, error) {
+	f.loginCalls++
+	return f.loginResult, f.loginErr
+}
+
+func (f *fakeAuthClient) Register(username string, password string) (internalservices.AuthSession, error) {
+	f.registerCalls++
+	return f.registerResult, f.registerErr
+}
+
+func (f *fakeAuthClient) ValidateAccessToken(token string, refreshToken string, userID int) (string, error) {
+	return token, nil
+}
+
+func useFakeAuthClient(t *testing.T, client internalservices.AuthClient) {
+	t.Helper()
+	internalscreens.SetAuthClientForTests(client)
+	t.Cleanup(func() {
+		internalscreens.ResetAuthClientForTests()
 	})
 }
 
@@ -97,4 +131,3 @@ func pressFormButton(t *testing.T, form *tview.Form, index int) {
 
 	handler(tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone), func(p tview.Primitive) {})
 }
-

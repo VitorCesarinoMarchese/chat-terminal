@@ -1,27 +1,18 @@
 package screens
 
 import (
-	"github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
-	"github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 func loginState(email string, password string, switchScreen func(name string)) {
-	dbu, err := db.GetDB()
+	session, err := authClient.Login(email, password)
 	if err != nil {
 		switchScreen("auth")
 		return
 	}
 
-	user := models.User{
-		Username:   email,
-		Jwt:        password,
-		JwtRefresh: password,
-	}
-
-	res := dbu.Create(&user)
-	if res.Error != nil {
+	if err := persistAuthSession(session); err != nil {
 		switchScreen("auth")
 		return
 	}

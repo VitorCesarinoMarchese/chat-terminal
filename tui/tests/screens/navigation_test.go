@@ -96,6 +96,8 @@ func TestAuthChatAndAccountMenusRouteAsExpected(t *testing.T) {
 }
 
 func TestRegisterAndPasswordFormsExposeExpectedNavigation(t *testing.T) {
+	useFakeAuthClient(t, &fakeAuthClient{})
+
 	var routes []string
 	switchScreen := func(name string) {
 		routes = append(routes, name)
@@ -136,4 +138,3 @@ func TestPagesRegisterAllExpectedScreens(t *testing.T) {
 		t.Fatalf("expected default front page to be home, got %q", front)
 	}
 }
-
