@@ -8,12 +8,12 @@ import (
 
 func Test(app *tview.Application) tview.Primitive {
 	messages := []string{
-		"[green]User1: [white]Hey, how are you?",
-		"[blue]User2: [white]I'm doing fine, thanks! You?",
-		"[green]User1: [white]Pretty good. Just testing this widget.",
-		"[blue]User2: [white]Looks like it's working!",
-		"[green]User1: [white]Sweet! Let’s add some more messages...",
-		"[blue]User2: [white]Sure thing!",
+		"User1: Hey, how are you?",
+		"User2: I'm doing fine, thanks! You?",
+		"User1: Pretty good. Just testing this widget.",
+		"User2: Looks like it's working!",
+		"User1: Sweet! Let’s add some more messages...",
+		"User2: Sure thing!",
 	}
 
 	testSubject := widgets.Conversations(messages, app)

@@ -2,6 +2,7 @@ package screens_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	internalscreens "github.com/VitorCesarinoMarchese/chat-terminal/internal/screens"
@@ -51,6 +52,7 @@ func TestWorkflowContactsToConversationSendAndBack(t *testing.T) {
 		t.Fatalf("expected conversation page after opening contact, got %q", front)
 	}
 	form := formFromScreen(t, primitive)
+	conversationView := conversationTextViewFromScreen(t, primitive)
 	setFormInput(t, form, "Message", "hello bob")
 	pressFormButton(t, form, 0) // Send
 
@@ -68,6 +70,9 @@ func TestWorkflowContactsToConversationSendAndBack(t *testing.T) {
 	}
 	if socket.sendCalls != 1 || socket.lastSendText != "hello bob" {
 		t.Fatalf("expected websocket send with message payload, got calls=%d text=%q", socket.sendCalls, socket.lastSendText)
+	}
+	if text := conversationView.GetText(false); strings.Contains(text, "[") {
+		t.Fatalf("expected conversation view text without style tags, got %q", text)
 	}
 
 	pressFormButton(t, form, 1) // Quit

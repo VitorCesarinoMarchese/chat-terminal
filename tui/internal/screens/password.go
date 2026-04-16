@@ -6,10 +6,7 @@ import (
 )
 
 func PaswordChange(switchScreen func(name string)) tview.Primitive {
-	form := tview.NewForm().
-		SetFieldBackgroundColor(tcell.ColorDarkGreen).
-		SetLabelColor(tcell.ColorOrchid).
-		SetButtonBackgroundColor(tcell.ColorDarkGreen).
+	form := applyTerminalFormTheme(tview.NewForm()).
 		AddPasswordField("Password", "", 0, '*', nil).
 		AddPasswordField("Reapet password", "", 0, '*', nil).
 		AddTextView("Pro tip", "You can navigate using tab and shift+tab", 0, 2, true, false).

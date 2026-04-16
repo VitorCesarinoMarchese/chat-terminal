@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/VitorCesarinoMarchese/chat-terminal/internal/screens"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -10,6 +11,7 @@ type App struct {
 }
 
 func NewApp() *App {
+	applyTerminalGlobalTheme()
 	app := tview.NewApplication()
 	pages := screens.NewPages(app)
 
@@ -17,6 +19,14 @@ func NewApp() *App {
 	app.SetFocus(pages)
 
 	return &App{tviewApp: app}
+}
+
+func applyTerminalGlobalTheme() {
+	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	tview.Styles.ContrastBackgroundColor = tcell.ColorDefault
+	tview.Styles.MoreContrastBackgroundColor = tcell.ColorDefault
+	tview.Styles.PrimaryTextColor = tcell.ColorDefault
+	tview.Styles.SecondaryTextColor = tcell.ColorDefault
 }
 
 func (a *App) Run() error {

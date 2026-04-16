@@ -37,10 +37,7 @@ func registerState(
 func Register(switchScreen func(name string)) tview.Primitive {
 	email, password, confirmPassword := "", "", ""
 
-	form := tview.NewForm().
-		SetFieldBackgroundColor(tcell.ColorDarkGreen).
-		SetLabelColor(tcell.ColorOrchid).
-		SetButtonBackgroundColor(tcell.ColorDarkGreen).
+	form := applyTerminalFormTheme(tview.NewForm()).
 		AddInputField("Email", "", 0, nil, func(value string) {
 			email = value
 		}).

@@ -23,10 +23,7 @@ func loginState(email string, password string, switchScreen func(name string)) {
 func Login(app *tview.Application, switchScreen func(name string)) tview.Primitive {
 	email, password := "", ""
 
-	form := tview.NewForm().
-		SetFieldBackgroundColor(tcell.ColorDarkGreen).
-		SetLabelColor(tcell.ColorOrchid).
-		SetButtonBackgroundColor(tcell.ColorDarkGreen).
+	form := applyTerminalFormTheme(tview.NewForm()).
 		AddInputField("Email", "", 0, nil, func(e string) {
 			email = e
 		}).

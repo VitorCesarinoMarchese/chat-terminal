@@ -30,15 +30,12 @@ func Conversation(switchScreen func(name string)) tview.Primitive {
 	}
 
 	textView := tview.NewTextView().
-		SetDynamicColors(true)
-	textView.SetText(fmt.Sprintf("[yellow]Connected to %s\n", state.chatName))
+		SetDynamicColors(false)
+	textView.SetText(fmt.Sprintf("Connected to %s\n", state.chatName))
 
 	message := ""
-	form := tview.NewForm()
+	form := applyTerminalFormTheme(tview.NewForm())
 	form.
-		SetFieldBackgroundColor(tcell.ColorDarkGreen).
-		SetLabelColor(tcell.ColorOrchid).
-		SetButtonBackgroundColor(tcell.ColorDarkGreen).
 		AddInputField("Message", "", 0, nil, func(value string) {
 			message = value
 		}).
@@ -48,11 +45,11 @@ func Conversation(switchScreen func(name string)) tview.Primitive {
 				return
 			}
 			if err := state.socket.Send(state.username, state.accessToken, trimmed); err != nil {
-				fmt.Fprintf(textView, "[red]send failed: %s\n", err.Error())
+				fmt.Fprintf(textView, "send failed: %s\n", err.Error())
 				return
 			}
 
-			fmt.Fprintf(textView, "[green]you:[white] %s\n", trimmed)
+			fmt.Fprintf(textView, "you: %s\n", trimmed)
 			message = ""
 			field := form.GetFormItemByLabel("Message")
 			if input, ok := field.(*tview.InputField); ok {

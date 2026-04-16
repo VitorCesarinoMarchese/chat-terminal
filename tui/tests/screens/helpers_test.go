@@ -204,6 +204,24 @@ func formFromScreen(t *testing.T, primitive tview.Primitive) *tview.Form {
 	return form
 }
 
+func conversationTextViewFromScreen(t *testing.T, primitive tview.Primitive) *tview.TextView {
+	t.Helper()
+
+	frame := frameFromPrimitive(t, primitive)
+	flex, ok := frame.GetPrimitive().(*tview.Flex)
+	if !ok {
+		t.Fatalf("expected frame primitive to be *tview.Flex, got %T", frame.GetPrimitive())
+	}
+
+	textPrimitive := flex.GetItem(0)
+	view, ok := textPrimitive.(*tview.TextView)
+	if !ok {
+		t.Fatalf("expected first flex item to be *tview.TextView, got %T", textPrimitive)
+	}
+
+	return view
+}
+
 func setFormInput(t *testing.T, form *tview.Form, label, value string) {
 	t.Helper()
 
