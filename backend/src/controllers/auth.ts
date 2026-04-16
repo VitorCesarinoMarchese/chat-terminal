@@ -2,12 +2,13 @@ import { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import db from "../config/db";
 import { generateAccessToken, generateTokens, verifyAccessToken, verifyRefreshToken } from "../utils/jwtUtils";
+import { sendError, sendSuccess } from "../utils/httpResponse";
 
 export const registerController = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return;
     }
 
@@ -17,7 +18,7 @@ export const registerController = async (req: Request, res: Response) => {
       }
     })
     if (usernameExists) {
-      res.status(406).json({ error: "Username already in use" })
+      sendError(res, 406, "Username already in use")
       return;
     }
 
@@ -40,9 +41,14 @@ export const registerController = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(201).json({ message: `User ${user.username} created suscessufuly`, refreshToken, accessToken })
+    sendSuccess(
+      res,
+      201,
+      `User ${user.username} created suscessufuly`,
+      { refreshToken, accessToken }
+    )
   } catch (e) {
-    res.status(500).json({ error: `Server erros` })
+    sendError(res, 500, "Server erros")
     console.error(e)
     return;
   }
@@ -52,7 +58,7 @@ export const loginController = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return;
     }
 
@@ -62,13 +68,13 @@ export const loginController = async (req: Request, res: Response) => {
       }
     })
     if (!user) {
-      res.status(404).json({ error: "User not found" })
+      sendError(res, 404, "User not found")
       return
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password)
     if (!isPasswordCorrect) {
-      res.status(401).json({ error: "Incorrect password" })
+      sendError(res, 401, "Incorrect password")
       return;
     }
 
@@ -83,9 +89,14 @@ export const loginController = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(202).json({ accessToken: accessToken, refreshToken: refreshToken, message: `User ${user.username} logged suscessufuly` })
+    sendSuccess(
+      res,
+      202,
+      `User ${user.username} logged suscessufuly`,
+      { accessToken, refreshToken }
+    )
   } catch (e) {
-    res.status(500).json({ error: `Server erros` })
+    sendError(res, 500, "Server erros")
     console.error(e)
     return;
   }
@@ -95,7 +106,7 @@ export const validateJWTController = async (req: Request, res: Response) => {
   try {
     const { token, refreshToken, userId } = req.body
     if (!token || !refreshToken || !userId) {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return
     }
 
@@ -103,24 +114,24 @@ export const validateJWTController = async (req: Request, res: Response) => {
     const isRefreshTokenValid = verifyRefreshToken(refreshToken, userId)
 
     if (!isAccessTokenValid && !isRefreshTokenValid) {
-      res.status(401).json({ error: "Tokens invalid, please login again" })
+      sendError(res, 401, "Tokens invalid, please login again")
       return
     }
 
     if (!isAccessTokenValid && isRefreshTokenValid) {
       try {
-        const newAccessToken = generateAccessToken(userId)
-        res.status(200).json({ accessToken: newAccessToken })
+        const newAccessToken = await generateAccessToken(userId)
+        sendSuccess(res, 200, "Generated new access token", { accessToken: newAccessToken })
         return
       } catch (e) {
-        res.status(500).json({ error: "Error generating a new access token" })
+        sendError(res, 500, "Error generating a new access token")
         return
       }
 
     }
 
-    res.status(200).json({ accessToken: token, message: "Your access token is validated successfully" })
+    sendSuccess(res, 200, "Your access token is validated successfully", { accessToken: token })
   } catch (e) {
-    res.status(500).json({ error: `Internal server error` })
+    sendError(res, 500, "Internal server error")
   }
 }

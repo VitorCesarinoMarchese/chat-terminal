@@ -16,6 +16,10 @@ import { disconnectTestDatabase, resetTestDatabase } from "../setup/db";
 import { RunningTestServer, startTestServer, stopTestServer } from "../setup/server";
 
 type JwtResponse = {
+  success?: boolean;
+  data?: {
+    accessToken?: unknown;
+  };
   accessToken?: unknown;
   message?: string;
   error?: string;
@@ -60,7 +64,9 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
     expect(body.accessToken).toBe(session.accessToken);
+    expect(body.data?.accessToken).toBe(session.accessToken);
     expect(body.message).toBe("Your access token is validated successfully");
   });
 
@@ -71,6 +77,7 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(400);
+    expect(body.success).toBe(false);
     expect(body.error).toBe("Missing data");
   });
 
@@ -83,6 +90,7 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(401);
+    expect(body.success).toBe(false);
     expect(body.error).toBe("Tokens invalid, please login again");
   });
 
@@ -101,10 +109,11 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(401);
+    expect(body.success).toBe(false);
     expect(body.error).toBe("Tokens invalid, please login again");
   });
 
-  it("TODO(hardening): currently returns non-string accessToken when only refresh token is valid", async () => {
+  it("returns 200 with string accessToken when only refresh token is valid", async () => {
     const session = await registerUser(
       running.baseHttpUrl,
       "bob-jwt-refresh-only",
@@ -119,7 +128,10 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(200);
-    expect(typeof body.accessToken).toBe("object");
+    expect(body.success).toBe(true);
+    expect(typeof body.accessToken).toBe("string");
+    expect(typeof body.data?.accessToken).toBe("string");
+    expect(body.message).toBe("Generated new access token");
   });
 
   it("returns 500 for deterministic token generation failure", async () => {
@@ -141,6 +153,7 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(500);
+    expect(body.success).toBe(false);
     expect(body.error).toBe("Error generating a new access token");
   });
 
@@ -163,6 +176,7 @@ describe("POST /api/auth/jwt", () => {
     const body = await readJson<JwtResponse>(response);
 
     expect(response.status).toBe(500);
+    expect(body.success).toBe(false);
     expect(body.error).toBe("Internal server error");
   });
 });
