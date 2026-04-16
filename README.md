@@ -12,8 +12,9 @@ It is designed as a portfolio-ready full-stack system that combines API design, 
 - Account registration and login with JWT access and refresh tokens
 - Token validation and access token renewal flow
 - Friendship requests (send, accept, reject, list)
-- Chat creation and chat lookup by participant
-- Real-time chat messages over WebSocket
+- Chat creation and chat lookup by participant (with chat IDs for WebSocket join)
+- Real-time chat join and message send over WebSocket
+- TUI contacts/groups menus connected to backend friend/chat endpoints
 - Message persistence in SQLite via Prisma
 - Multi-screen terminal interface built with `tview`
 
@@ -118,7 +119,21 @@ go mod download
 go run ./cmd
 ```
 
-The TUI creates local state in `tui/internal/state/test.db`.
+Optional runtime env vars:
+
+```env
+TUI_API_BASE_URL=http://localhost:8080
+TUI_WS_BASE_URL=ws://localhost:3030
+TUI_DB_PATH=internal/state/test.db
+```
+
+Default local state path is `tui/internal/state/test.db`.
+
+Current TUI navigation flow:
+
+1. Home -> Auth (login/register) -> Chat Menu
+2. Chat Menu -> Contacts (friend-backed direct chats) or Groups (chat list)
+3. Select chat -> Conversation screen (WebSocket join + send message)
 
 ## HTTP API Surface
 
@@ -141,6 +156,8 @@ The TUI creates local state in `tui/internal/state/test.db`.
 - `POST /api/chat/create`
 - `GET /api/chat/all`
 - `GET /api/chat/with`
+
+`GET /api/chat/all` and `GET /api/chat/with` return chat IDs, names, and members. The TUI uses chat IDs to send WebSocket `join` events.
 
 ## WebSocket Message Shape
 
