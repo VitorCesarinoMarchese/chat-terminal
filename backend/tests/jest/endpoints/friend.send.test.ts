@@ -107,6 +107,29 @@ describe("POST /api/friend/send", () => {
     expect(duplicate.status).toBe(409);
   });
 
+  it("returns 400 and does not create request when sender invites self", async () => {
+    const alice = await registerUser(
+      running.baseHttpUrl,
+      USERS.alice.username,
+      USERS.alice.password
+    );
+
+    const response = await postJson(
+      running.baseHttpUrl,
+      "/api/friend/send",
+      { senderUsername: USERS.alice.username, receiverUsername: USERS.alice.username },
+      alice.accessToken
+    );
+
+    expect(response.status).toBe(400);
+
+    const selfRequests = await db.friendship.findMany({
+      where: { requesterId: alice.userId, receiverId: alice.userId },
+      select: { id: true },
+    });
+    expect(selfRequests).toHaveLength(0);
+  });
+
   it("returns 500 for deterministic DB failure", async () => {
     const alice = await registerUser(
       running.baseHttpUrl,

@@ -40,6 +40,7 @@ export const sendFriendInvitationController = async (req: Request, res: Response
 
     if (receiver.id == senderId) {
       res.status(400).json({ error: "You can't send a friend request to yourself" })
+      return
     }
 
     const isRequested = await db.friendship.findFirst({
@@ -93,15 +94,20 @@ export const acceptFriendRequestController = async (req: Request, res: Response)
       res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
+    const userId = isTokenValid.id
 
     const isRequested = await db.friendship.findFirst({
       where: {
         id: requestId
       },
-      select: { id: true, status: true }
+      select: { id: true, status: true, receiverId: true }
     })
     if (!isRequested) {
       res.status(400).json({ error: "Friendship request does not exists" })
+      return
+    }
+    if (isRequested.receiverId !== userId) {
+      res.status(403).json({ error: "Only receiver can accept this request" })
       return
     }
 
@@ -144,14 +150,19 @@ export const rejectFriendRequestController = async (req: Request, res: Response)
       res.status(isTokenValid.code).json({ error: isTokenValid.error })
       return
     }
+    const userId = isTokenValid.id
     const isRequested = await db.friendship.findFirst({
       where: {
         id: requestId
       },
-      select: { id: true, status: true }
+      select: { id: true, status: true, receiverId: true }
     })
     if (!isRequested) {
       res.status(400).json({ error: "Friendship request does not exists" })
+      return
+    }
+    if (isRequested.receiverId !== userId) {
+      res.status(403).json({ error: "Only receiver can reject this request" })
       return
     }
 

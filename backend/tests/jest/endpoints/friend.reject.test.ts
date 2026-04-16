@@ -22,7 +22,7 @@ async function createPendingRequest(baseUrl: string) {
       `createPendingRequest failed (${inviteResponse.status}): ${JSON.stringify(inviteBody)}`
     );
   }
-  return { requestId: inviteBody.request.id, bob };
+  return { requestId: inviteBody.request.id, alice, bob };
 }
 
 describe("POST /api/friend/reject", () => {
@@ -103,6 +103,24 @@ describe("POST /api/friend/reject", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  it("returns 403 when requester tries to reject request", async () => {
+    const { requestId, alice } = await createPendingRequest(running.baseHttpUrl);
+
+    const response = await postJson(
+      running.baseHttpUrl,
+      "/api/friend/reject",
+      { requestId, username: USERS.alice.username },
+      alice.accessToken
+    );
+    expect(response.status).toBe(403);
+
+    const request = await db.friendship.findUnique({
+      where: { id: requestId },
+      select: { status: true },
+    });
+    expect(request?.status).toBe("PENDING");
   });
 
   it("returns 500 for deterministic DB failure", async () => {

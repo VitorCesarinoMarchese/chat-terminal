@@ -106,6 +106,24 @@ describe("POST /api/friend/accept", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns 403 when requester tries to accept request", async () => {
+    const { requestId, alice } = await createPendingRequest(running.baseHttpUrl);
+
+    const response = await postJson(
+      running.baseHttpUrl,
+      "/api/friend/accept",
+      { requestId, username: alice.username },
+      alice.accessToken
+    );
+    expect(response.status).toBe(403);
+
+    const request = await db.friendship.findUnique({
+      where: { id: requestId },
+      select: { status: true },
+    });
+    expect(request?.status).toBe("PENDING");
+  });
+
   it("returns 500 for deterministic DB failure", async () => {
     const { requestId, bob } = await createPendingRequest(running.baseHttpUrl);
     mockRejectedOnce(db.friendship, "update", "friend-accept-update-failure");
