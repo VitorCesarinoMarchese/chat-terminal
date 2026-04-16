@@ -87,6 +87,13 @@ export const websocketController = (wss: WebSocketServer) => {
           }
 
           const { username, token, chatId } = message.payload
+          const parsedChatId = Number(chatId)
+
+          if (Number.isNaN(parsedChatId)) {
+            ws.send(JSON.stringify({ type: "error", message: "Invalid payload structure" }))
+            return
+          }
+
           const tokenData = await validateAccessToken(username, token)
 
           if (!tokenData.valid) {
@@ -95,7 +102,7 @@ export const websocketController = (wss: WebSocketServer) => {
             return
           }
 
-          const isChatValid = await chatValidation(chatId, tokenData.id)
+          const isChatValid = await chatValidation(parsedChatId, tokenData.id)
           if (!isChatValid) {
             ws.send(JSON.stringify({ type: "error", message: "Chat not found or unauthorized" }))
             ws.close()
@@ -118,19 +125,19 @@ export const websocketController = (wss: WebSocketServer) => {
             })
           }
 
-          clients.set(ws, { ws, userId: tokenData.id, chatId: Number(chatId) })
-          ws.send(JSON.stringify({ type: "joined", chatId: Number(chatId) }))
+          clients.set(ws, { ws, userId: tokenData.id, chatId: parsedChatId })
+          ws.send(JSON.stringify({ type: "joined", chatId: parsedChatId }))
 
           clients.forEach((otherClient) => {
-            if (otherClient.chatId === chatId && otherClient.ws !== ws) {
+            if (otherClient.chatId === parsedChatId && otherClient.ws !== ws) {
               otherClient.ws.send(JSON.stringify({
                 type: "user_joined",
-                data: { username, chatId: Number(chatId) }
+                data: { username, chatId: parsedChatId }
               }))
             }
           })
 
-          console.log(`User ${username} joined the chat ${chatId}`)
+          console.log(`User ${username} joined the chat ${parsedChatId}`)
           break
         }
 
