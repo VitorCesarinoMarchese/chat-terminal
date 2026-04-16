@@ -62,9 +62,10 @@ describe("GET /api/chat/with", () => {
       `/api/chat/with?username=${alice.username}&findUser=${bob.username}`,
       alice.accessToken
     );
-    const body = await readJson<{ userChats: Array<{ name: string }> }>(response);
+    const body = await readJson<{ userChats: Array<{ id: number; name: string }> }>(response);
 
     expect(response.status).toBe(200);
+    expect(typeof body.userChats[0]?.id).toBe("number");
     expect(body.userChats.map((chat) => chat.name).sort()).toEqual([CHATS.general.name]);
   });
 

@@ -167,7 +167,7 @@ func TestPagesRegisterAllExpectedScreens(t *testing.T) {
 	expectedPages := []string{
 		"home", "auth", "login", "register",
 		"chatmenu", "contacts", "groups",
-		"account", "username", "password", "test",
+		"account", "username", "password", "conversation", "test",
 	}
 	for _, page := range expectedPages {
 		if !pages.HasPage(page) {

@@ -126,6 +126,7 @@ export const getAllChats = async (req: Request, res: Response) => {
         }
       },
       select: {
+        id: true,
         name: true,
         member: {
           select: { user: { select: { username: true } } }
@@ -199,6 +200,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
         ]
       },
       select: {
+        id: true,
         name: true,
         member: {
           select: { user: { select: { username: true } } }

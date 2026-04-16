@@ -8,11 +8,34 @@ import (
 )
 
 func Groups(switchScreen func(name string)) tview.Primitive {
-	items := []types.MenuItem{
-		{Title: "Back", Desc: "Press to return to chat menu", Shortcut: 'q', F: func() {
-			switchScreen("chatmenu")
-		}},
+	items := make([]types.MenuItem, 0)
+
+	session, err := currentSession()
+	if err == nil {
+		chats, listErr := chatClient.ListChats(session.Username, session.AccessToken)
+		if listErr == nil {
+			for _, chat := range chats {
+				chatEntry := chat
+				items = append(items, types.MenuItem{
+					Title: chatEntry.Name,
+					Desc:  "Join group chat",
+					F: func() {
+						openGroupConversation(chatEntry, switchScreen)
+					},
+				})
+			}
+		}
 	}
+
+	items = append(items, types.MenuItem{
+		Title:    "Back",
+		Desc:     "Press to return to chat menu",
+		Shortcut: 'q',
+		F: func() {
+			switchScreen("chatmenu")
+		},
+	})
+
 	list := widgets.Menu(items)
 
 	frame := tview.NewFrame(list).

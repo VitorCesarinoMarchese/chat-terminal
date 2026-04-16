@@ -62,10 +62,11 @@ describe("GET /api/chat/all", () => {
       alice.accessToken
     );
     const body = await readJson<
-      { userChats: Array<{ name: string; member: Array<{ user: { username: string } }> }> }
+      { userChats: Array<{ id: number; name: string; member: Array<{ user: { username: string } }> }> }
     >(response);
 
     expect(response.status).toBe(200);
+    expect(typeof body.userChats[0]?.id).toBe("number");
     expect(body.userChats.map((chat) => chat.name)).toEqual([CHATS.general.name]);
     expect(body.userChats[0]?.member.map((member) => member.user.username).sort()).toEqual(
       [alice.username, bob.username].sort()

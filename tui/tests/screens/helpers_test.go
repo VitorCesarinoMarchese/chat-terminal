@@ -25,6 +25,7 @@ func setupScreenTestDB(t *testing.T, withMigrations bool) {
 	t.Cleanup(func() {
 		_ = internaldb.CloseDB()
 		internalscreens.ResetAuthClientForTests()
+		internalscreens.ResetChatClientForTests()
 	})
 }
 
@@ -56,7 +57,110 @@ func useFakeAuthClient(t *testing.T, client internalservices.AuthClient) {
 	internalscreens.SetAuthClientForTests(client)
 	t.Cleanup(func() {
 		internalscreens.ResetAuthClientForTests()
+		internalscreens.ResetChatClientForTests()
 	})
+}
+
+type fakeChatSocket struct {
+	joinCalls  int
+	sendCalls  int
+	closeCalls int
+
+	lastJoinUsername string
+	lastJoinToken    string
+	lastJoinChatID   int
+	lastSendUsername string
+	lastSendToken    string
+	lastSendText     string
+
+	joinErr  error
+	sendErr  error
+	closeErr error
+}
+
+func (f *fakeChatSocket) Join(username string, token string, chatID int) error {
+	f.joinCalls++
+	f.lastJoinUsername = username
+	f.lastJoinToken = token
+	f.lastJoinChatID = chatID
+	return f.joinErr
+}
+
+func (f *fakeChatSocket) Send(username string, token string, text string) error {
+	f.sendCalls++
+	f.lastSendUsername = username
+	f.lastSendToken = token
+	f.lastSendText = text
+	return f.sendErr
+}
+
+func (f *fakeChatSocket) Close() error {
+	f.closeCalls++
+	return f.closeErr
+}
+
+type fakeChatClient struct {
+	listFriendsResult []string
+	listFriendsErr    error
+	listChatsResult   []internalservices.Chat
+	listChatsErr      error
+	openChatResult    internalservices.Chat
+	openChatErr       error
+	socket            internalservices.ChatSocket
+	connectErr        error
+
+	listFriendsCalls int
+	listChatsCalls   int
+	openChatCalls    int
+	connectCalls     int
+}
+
+func (f *fakeChatClient) ListFriends(username string, accessToken string) ([]string, error) {
+	f.listFriendsCalls++
+	return f.listFriendsResult, f.listFriendsErr
+}
+
+func (f *fakeChatClient) ListChats(username string, accessToken string) ([]internalservices.Chat, error) {
+	f.listChatsCalls++
+	return f.listChatsResult, f.listChatsErr
+}
+
+func (f *fakeChatClient) OpenDirectChat(username string, accessToken string, friendUsername string) (internalservices.Chat, error) {
+	f.openChatCalls++
+	return f.openChatResult, f.openChatErr
+}
+
+func (f *fakeChatClient) ConnectWebSocket() (internalservices.ChatSocket, error) {
+	f.connectCalls++
+	if f.connectErr != nil {
+		return nil, f.connectErr
+	}
+	return f.socket, nil
+}
+
+func useFakeChatClient(t *testing.T, client internalservices.ChatClient) {
+	t.Helper()
+	internalscreens.SetChatClientForTests(client)
+	t.Cleanup(func() {
+		internalscreens.ResetChatClientForTests()
+	})
+}
+
+func seedSessionUser(t *testing.T, username string, accessToken string, refreshToken string) {
+	t.Helper()
+	dbu, err := internaldb.GetDB()
+	if err != nil {
+		t.Fatalf("GetDB() failed: %v", err)
+	}
+
+	user := internalmodels.User{
+		Username:   username,
+		Jwt:        accessToken,
+		JwtRefresh: refreshToken,
+	}
+	if createErr := dbu.Create(&user).Error; createErr != nil {
+		t.Fatalf("failed creating seeded session user: %v", createErr)
+	}
 }
 
 func frameFromPrimitive(t *testing.T, primitive tview.Primitive) *tview.Frame {
