@@ -10,7 +10,7 @@ import (
 func Conversations(messages []string, app *tview.Application) tview.Primitive {
 
 	msgView := tview.NewTextView().
-		SetDynamicColors(true).
+		SetDynamicColors(false).
 		SetRegions(true).
 		SetChangedFunc(func() {
 			app.Draw()
@@ -23,7 +23,7 @@ func Conversations(messages []string, app *tview.Application) tview.Primitive {
 	}()
 
 	msgView.SetBorder(true).
-		SetBorderColor(tcell.ColorWhite).
+		SetBorderColor(tcell.ColorDefault).
 		SetBorderPadding(1, 1, 3, 3)
 
 	return msgView

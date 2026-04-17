@@ -3,7 +3,7 @@ import { isUserIdValid } from "./userUtils"
 
 export const chatValidation = async (chatId: number, userId: number) => {
   try {
-    if (!isUserIdValid(userId)) {
+    if (!await isUserIdValid(userId)) {
       return false
     }
 

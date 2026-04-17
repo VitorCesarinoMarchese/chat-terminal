@@ -10,7 +10,7 @@ import (
 func AccountMenu(switchScreen func(name string)) tview.Primitive {
 	items := []types.MenuItem{
 		{Title: "Username", Desc: "Change your username", Shortcut: 'u', F: func() {
-			switchScreen("login")
+			switchScreen("username")
 		}},
 		{Title: "Password", Desc: "Change your password", Shortcut: 'p', F: func() {
 			switchScreen("password")

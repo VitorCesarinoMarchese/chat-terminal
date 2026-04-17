@@ -25,7 +25,7 @@ if (!jwtSecret || !jwtRefreshSecret) {
 
 export const generateTokens = async (userId: number): Promise<generatedTokens> => {
 
-  const user = db.user.findUnique({
+  const user = await db.user.findUnique({
     where: {
       id: userId
     }
@@ -50,7 +50,7 @@ export const generateTokens = async (userId: number): Promise<generatedTokens> =
 
 export const generateAccessToken = async (userId: number): Promise<string> => {
 
-  const user = db.user.findUnique({
+  const user = await db.user.findUnique({
     where: {
       id: userId
     }

@@ -2,18 +2,19 @@ import { Request, Response } from "express"
 import { validateAccessToken } from "../utils/jwtUtils"
 import { getUserId, isUserValid } from "../utils/userUtils"
 import db from "../config/db"
+import { sendError, sendSuccess } from "../utils/httpResponse"
 
 export const createChatController = async (req: Request, res: Response) => {
   try {
     const { name, username, members } = req.body
     if (!name || !username || !members || !Array.isArray(members)) {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return
     }
 
     let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(401).json({ error: "Access denied" });
+      sendError(res, 401, "Access denied");
       return;
     }
     if (headerToken.startsWith("Bearer ")) {
@@ -23,47 +24,68 @@ export const createChatController = async (req: Request, res: Response) => {
     const isTokenValid = await validateAccessToken(username, headerToken)
 
     if (!isTokenValid.valid) {
-      res.status(isTokenValid.code).json({ error: isTokenValid.error })
+      sendError(res, isTokenValid.code, isTokenValid.error)
       return
     }
 
 
     const userId = isTokenValid.id
 
-    const chat = await db.chat.create({
-      data: {
-        name: name,
-        userId: userId,
-      },
-      select: { id: true }
-    })
+    const memberIds: number[] = []
+    for (const member of members) {
+      if (typeof member !== "string" || member.trim().length === 0) {
+        sendError(res, 400, "Invalid member username")
+        return
+      }
 
-    members.map(async (member: string) => {
       const validUser = await isUserValid(member)
       if (!validUser) {
-        res.status(400).json({ error: `User ${member} is not valid` })
+        sendError(res, 400, `User ${member} is not valid`)
         return
-      } else {
-        await db.member.create({
-          data: {
+      }
+
+      const memberId = await getUserId(member)
+      if (memberId === -1) {
+        sendError(res, 400, `User ${member} is not valid`)
+        return
+      }
+
+      if (memberId !== userId && !memberIds.includes(memberId)) {
+        memberIds.push(memberId)
+      }
+    }
+
+    await db.$transaction(async (tx) => {
+      const chat = await tx.chat.create({
+        data: {
+          name: name,
+          userId: userId,
+        },
+        select: { id: true }
+      })
+
+      if (memberIds.length > 0) {
+        await tx.member.createMany({
+          data: memberIds.map((memberId) => ({
             chatId: chat.id,
-            userId: await getUserId(member),
-            role: 'USER'
-          }
+            userId: memberId,
+            role: "USER"
+          }))
         })
       }
-    })
-    await db.member.create({
-      data: {
-        chatId: chat.id,
-        userId: userId,
-        role: 'ADMIN'
-      }
+
+      await tx.member.create({
+        data: {
+          chatId: chat.id,
+          userId: userId,
+          role: 'ADMIN'
+        }
+      })
     })
 
-    res.status(201).json({ message: `Chat ${name} created` })
+    sendSuccess(res, 201, `Chat ${name} created`, {})
   } catch (error) {
-    res.status(500).json({ error: `Server erros` })
+    sendError(res, 500, "Server erros")
     return;
   }
 }
@@ -72,13 +94,13 @@ export const getAllChats = async (req: Request, res: Response) => {
   try {
     const { username } = req.query
     if (!username || typeof username != 'string') {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return
     }
 
     let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(401).json({ error: "Access denied" });
+      sendError(res, 401, "Access denied");
       return;
     }
     if (headerToken.startsWith("Bearer ")) {
@@ -88,7 +110,7 @@ export const getAllChats = async (req: Request, res: Response) => {
     const isTokenValid = await validateAccessToken(username, headerToken)
 
     if (!isTokenValid.valid) {
-      res.status(isTokenValid.code).json({ error: isTokenValid.error })
+      sendError(res, isTokenValid.code, isTokenValid.error)
       return
     }
 
@@ -104,15 +126,16 @@ export const getAllChats = async (req: Request, res: Response) => {
         }
       },
       select: {
+        id: true,
         name: true,
         member: {
           select: { user: { select: { username: true } } }
         }
       }
     })
-    res.status(200).json({ message: "Chats find successefuly", userChats })
+    sendSuccess(res, 200, "Chats find successefuly", { userChats })
   } catch (e) {
-    res.status(500).json({ error: "Internal server error" })
+    sendError(res, 500, "Internal server error")
   }
 }
 
@@ -120,13 +143,13 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
   try {
     const { username, findUser } = req.query
     if (!username || typeof username != 'string' || !findUser || typeof findUser != 'string') {
-      res.status(400).json({ error: "Missing data" })
+      sendError(res, 400, "Missing data")
       return
     }
 
     let headerToken = req.headers['authorization']
     if (!headerToken) {
-      res.status(401).json({ error: "Access denied" });
+      sendError(res, 401, "Access denied");
       return;
     }
     if (headerToken.startsWith("Bearer ")) {
@@ -136,7 +159,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
     const isTokenValid = await validateAccessToken(username, headerToken)
 
     if (!isTokenValid.valid) {
-      res.status(isTokenValid.code).json({ error: isTokenValid.error })
+      sendError(res, isTokenValid.code, isTokenValid.error)
       return
     }
 
@@ -144,7 +167,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
 
     const findUserExist = await db.user.findFirst({
       where: {
-        username: username
+        username: findUser
       },
       select: {
         id: true
@@ -152,7 +175,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
     })
 
     if (!findUserExist) {
-      res.status(400).json({ error: "User does not exist" })
+      sendError(res, 400, "User does not exist")
       return
     }
     const findUserId = findUserExist.id
@@ -177,6 +200,7 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
         ]
       },
       select: {
+        id: true,
         name: true,
         member: {
           select: { user: { select: { username: true } } }
@@ -184,8 +208,8 @@ export const getChatsWithUser = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(200).json({ message: "Chats find successefuly", userChats })
+    sendSuccess(res, 200, "Chats find successefuly", { userChats })
   } catch (e) {
-    res.status(500).json({ error: "Internal server error" })
+    sendError(res, 500, "Internal server error")
   }
 }

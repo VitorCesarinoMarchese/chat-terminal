@@ -1,29 +1,18 @@
 package screens
 
 import (
-	"log"
-
-	"github.com/VitorCesarinoMarchese/chat-terminal/internal/db"
-	"github.com/VitorCesarinoMarchese/chat-terminal/internal/models"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 func loginState(email string, password string, switchScreen func(name string)) {
-	dbu, err := db.GetDB()
+	session, err := authClient.Login(email, password)
 	if err != nil {
-		log.Fatal(err)
+		switchScreen("auth")
 		return
 	}
 
-	user := models.User{
-		Username:   email,
-		Jwt:        password,
-		JwtRefresh: password,
-	}
-
-	res := dbu.Create(&user)
-	if res.Error != nil {
+	if err := persistAuthSession(session); err != nil {
 		switchScreen("auth")
 		return
 	}
@@ -34,10 +23,7 @@ func loginState(email string, password string, switchScreen func(name string)) {
 func Login(app *tview.Application, switchScreen func(name string)) tview.Primitive {
 	email, password := "", ""
 
-	form := tview.NewForm().
-		SetFieldBackgroundColor(tcell.ColorDarkGreen).
-		SetLabelColor(tcell.ColorOrchid).
-		SetButtonBackgroundColor(tcell.ColorDarkGreen).
+	form := applyTerminalFormTheme(tview.NewForm()).
 		AddInputField("Email", "", 0, nil, func(e string) {
 			email = e
 		}).
